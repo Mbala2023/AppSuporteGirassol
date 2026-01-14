@@ -1,24 +1,33 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect, useRef } from "react"
-import { useNavigate, useParams, Link } from "react-router"
-import { Navbar } from "@/components/navbar"
-import { useAuth } from "@/lib/auth-context"
-import type { ChatMessage, Order } from "@/lib/types"
-import { mockOrders, getUserById } from "@/lib/mock-data"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, Send } from "lucide-react"
-import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
-import { AttendanceTimer } from "@/components/attendance-timer"
+import { useState, useEffect, useRef } from "react";
+import { useNavigate, useParams, Link } from "react-router";
+import { Navbar } from "@/components/navbar";
+import { useAuth } from "@/lib/auth-context";
+import type { ChatMessage, Order } from "@/lib/types";
+import { mockOrders, getUserById } from "@/lib/mock-data";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { ArrowLeft, Send } from "lucide-react";
+import { format } from "date-fns";
+import { ptBR, se } from "date-fns/locale";
+import { AttendanceTimer } from "@/components/attendance-timer";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
+import { time } from "node:console";
 
-const chatMessagesStore: ChatMessage[] = [
+/*const chatMessagesStore: ChatMessage[] = [
   {
     id: "MSG001",
     orderId: "ORD001",
@@ -55,66 +64,74 @@ const chatMessagesStore: ChatMessage[] = [
     createdAt: new Date("2025-01-10T13:50:00"),
     lida: false,
   },
-]
+]*/
 
 export default function ChatPage() {
-  const { user, isAuthenticated } = useAuth()
-  const router = useNavigate()
-  const params = useParams()
-  const orderId = params.orderId as string
+  const { user, isAuthenticated } = useAuth();
+  const router = useNavigate();
+  const params = useParams();
+  const orderId = params.orderId as string;
+  const [order, setOrder] = useState<Order>(mockOrders[0]);
 
-  const [order, setOrder] = useState<Order | null>(null)
-  const [messages, setMessages] = useState<ChatMessage[]>([])
-  const [newMessage, setNewMessage] = useState("")
-  const messagesEndRef = useRef<HTMLDivElement>(null)
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [newMessage, setNewMessage] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const stompClientRef = useRef<Client>(null);
+
+  const sendMessage = () => {
+    const stompClient = stompClientRef.current;
+    if (stompClient && stompClient.connected) {
+      console.log("Sending message:", name);
+      stompClient.publish({
+        destination: "/app/chat/" + orderId,
+        body: JSON.stringify({ 
+          sender: 'user',
+          content: newMessage,
+          timestamp: new Date().toISOString(),
+         }),
+      });
+
+      setNewMessage("");
+      setMessages((prev) => [
+        ...prev,
+        { sender: "user", content: newMessage, timestamp: new Date().toISOString() },
+      ]);
+    } else {
+      console.error("Stomp client is not connected");
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
-      router("/")
-      return
+      router("/");
+      return;
     }
 
-    // Buscar pedido
-    const foundOrder = mockOrders.find((o) => o.id === orderId)
+    /* Buscar pedido
+    const foundOrder = mockOrders.find((o) => o.id === orderId);
     if (!foundOrder) {
-      router("/pedidos")
-      return
+      router("/pedidos");
+      return;
     }
 
     // Verificar se o usuário tem acesso a este chat
-    if (foundOrder.clienteId !== user?.id && foundOrder.tecnicoId !== user?.id) {
-      router("/pedidos")
-      return
+    if (
+      foundOrder.clienteId !== user?.id &&
+      foundOrder.tecnicoId !== user?.id
+    ) {
+      router("/pedidos");
+      return;
     }
 
-    setOrder(foundOrder)
-    setMessages(chatMessagesStore.filter((m) => m.orderId === orderId))
-  }, [isAuthenticated, user, orderId, router])
+    setOrder(foundOrder);
+    */
+  }, [isAuthenticated, user, orderId, router]);
 
   useEffect(() => {
     // Scroll para a última mensagem
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [messages])
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault()
-
-    if (!newMessage.trim() || !user) return
-
-    const message: ChatMessage = {
-      id: `MSG${Date.now()}`,
-      orderId,
-      senderId: user.id,
-      senderRole: user.role,
-      mensagem: newMessage,
-      createdAt: new Date(),
-      lida: false,
-    }
-
-    chatMessagesStore.push(message)
-    setMessages((prev) => [...prev, message])
-    setNewMessage("")
-  }
 
   const getInitials = (name: string) => {
     return name
@@ -122,15 +139,45 @@ export default function ChatPage() {
       .map((n) => n[0])
       .join("")
       .toUpperCase()
-      .slice(0, 2)
+      .slice(0, 2);
+  };
+
+  if (!isAuthenticated) {
+    return null;
   }
 
-  if (!isAuthenticated || !order) {
-    return null
-  }
 
-  const otherUserId = order.clienteId === user?.id ? order.tecnicoId : order.clienteId
-  const otherUser = otherUserId ? getUserById(otherUserId) : null
+  useEffect(() => {
+    const socket = new SockJS("http://localhost:8080/ws");
+    const stompClient = new Client({
+      webSocketFactory: () => socket,
+      reconnectDelay: 5000,
+      debug: (str) => {
+        console.log(str);
+      },
+      onConnect: () => {
+        console.log("Connected to WebSocket");
+        stompClient.subscribe("/topic/chat/" + orderId, (response) => {
+          console.log("Received message:", response.body);
+          setMessages((prev) => [
+            ...prev,
+            JSON.parse(response.body),
+          ]);
+        });
+      },
+      onStompError: (frame) => {
+        console.error("Broker reported error: " + frame.headers["message"]);
+        console.error("Additional details: " + frame.body);
+      },
+    });
+
+    stompClient.activate();
+    stompClientRef.current = stompClient;
+
+    return () => {
+      stompClient.deactivate();
+    };
+  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -150,8 +197,12 @@ export default function ChatPage() {
           <CardHeader>
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
               <div className="flex-1">
-                <CardTitle className="text-base sm:text-lg">{order.titulo}</CardTitle>
-                <CardDescription className="text-xs sm:text-sm">Pedido #{order.id}</CardDescription>
+                <CardTitle className="text-base sm:text-lg">
+                  {order.titulo}
+                </CardTitle>
+                <CardDescription className="text-xs sm:text-sm">
+                  Pedido #{order.id}
+                </CardDescription>
               </div>
               <Badge className="self-start">{order.status}</Badge>
             </div>
@@ -160,12 +211,18 @@ export default function ChatPage() {
             {otherUser && (
               <div className="flex items-center gap-3">
                 <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
-                  <AvatarFallback className="text-xs sm:text-sm">{getInitials(otherUser.nome)}</AvatarFallback>
+                  <AvatarFallback className="text-xs sm:text-sm">
+                    {getInitials(otherUser.nome)}
+                  </AvatarFallback>
                 </Avatar>
                 <div>
-                  <p className="font-medium text-sm sm:text-base">{otherUser.nome}</p>
+                  <p className="font-medium text-sm sm:text-base">
+                    {otherUser.nome}
+                  </p>
                   <p className="text-xs sm:text-sm text-muted-foreground">
-                    {otherUser.role === "tecnico" ? otherUser.especialidade : "Cliente"}
+                    {otherUser.role === "tecnico"
+                      ? otherUser.especialidade
+                      : "Cliente"}
                   </p>
                 </div>
               </div>
@@ -175,7 +232,10 @@ export default function ChatPage() {
 
         {(order.status === "em_andamento" || order.status === "aceito") && (
           <div className="mb-4">
-            <AttendanceTimer startTime={order.inicioAtendimento} status={order.status} />
+            <AttendanceTimer
+              startTime={order.inicioAtendimento}
+              status={order.status}
+            />
           </div>
         )}
 
@@ -191,46 +251,61 @@ export default function ChatPage() {
                 </p>
               ) : (
                 messages.map((message) => {
-                  const sender = getUserById(message.senderId)
-                  const isCurrentUser = message.senderId === user?.id
+                  const sender = message.sender;
+                  const isCurrentUser = message.senderId === user?.id;
 
                   return (
                     <div
                       key={message.id}
-                      className={`flex gap-2 sm:gap-3 ${isCurrentUser ? "flex-row-reverse" : "flex-row"}`}
+                      className={`flex gap-2 sm:gap-3 ${
+                        isCurrentUser ? "flex-row-reverse" : "flex-row"
+                      }`}
                     >
                       <Avatar className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
-                        <AvatarFallback className="text-xs">{sender ? getInitials(sender.nome) : "?"}</AvatarFallback>
+                        <AvatarFallback className="text-xs">
+                          {sender ? getInitials(sender.nome) : "?"}
+                        </AvatarFallback>
                       </Avatar>
                       <div
-                        className={`flex flex-col gap-1 max-w-[75%] sm:max-w-[70%] ${isCurrentUser ? "items-end" : "items-start"}`}
+                        className={`flex flex-col gap-1 max-w-[75%] sm:max-w-[70%] ${
+                          isCurrentUser ? "items-end" : "items-start"
+                        }`}
                       >
                         <div
                           className={`rounded-lg px-3 py-2 sm:px-4 ${
-                            isCurrentUser ? "bg-primary text-primary-foreground" : "bg-muted"
+                            isCurrentUser
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted"
                           }`}
                         >
-                          <p className="text-xs sm:text-sm break-words">{message.mensagem}</p>
+                          <p className="text-xs sm:text-sm break-words">
+                            {message.content}
+                          </p>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {format(message.createdAt, "HH:mm", { locale: ptBR })}
+                          {format(message.timestamp, "HH:mm", { locale: ptBR })}
                         </span>
                       </div>
                     </div>
-                  )
+                  );
                 })
               )}
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={handleSendMessage} className="flex gap-2">
+            <form onSubmit={e => {e.preventDefault(); sendMessage()}} className="flex gap-2">
               <Input
                 placeholder="Digite sua mensagem..."
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 className="flex-1 text-sm"
               />
-              <Button type="submit" size="icon" disabled={!newMessage.trim()} className="flex-shrink-0">
+              <Button
+                type="submit"
+                size="icon"
+                disabled={!newMessage.trim()}
+                className="flex-shrink-0"
+              >
                 <Send className="h-4 w-4" />
               </Button>
             </form>
@@ -238,5 +313,5 @@ export default function ChatPage() {
         </Card>
       </main>
     </div>
-  )
+  );
 }

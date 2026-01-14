@@ -61,13 +61,10 @@ export interface Rating {
 
 // Interface da mensagem do chat
 export interface ChatMessage {
-  id: string
-  orderId: string
-  senderId: string
-  senderRole: UserRole
-  mensagem: string
-  createdAt: Date
-  lida: boolean
+  id?: string
+  sender: "user" | "bot"
+  content: string
+  timestamp: string
 }
 
 // Interface para estatísticas do dashboard
