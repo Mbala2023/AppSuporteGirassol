@@ -1,13 +1,11 @@
 "use client"
 
-import type { Order, OrderStatus } from "@/lib/types"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Calendar, MapPin, MessageSquare, X, CheckCircle, Star } from "lucide-react"
 import { format } from "date-fns"
-import { ptBR } from "date-fns/locale"
-import { getUserById } from "@/lib/mock-data"
+import { ptBR, te } from "date-fns/locale"
 import { useAuth } from "@/lib/auth-context"
 import { Link } from "react-router"
 
@@ -29,6 +27,48 @@ const statusConfig: Record<
   concluido: { label: "Concluído", variant: "secondary" },
   cancelado: { label: "Cancelado", variant: "destructive" },
   avaliado: { label: "Avaliado", variant: "secondary" },
+}
+
+const mockOrders: Order[] = [
+  { id: "1", titulo: "Instalação de Software", status: "pendente", tecnicoId: 2, clienteId: 3 },
+  { id: "2", titulo: "Troca de Peça", status: "em_andamento", tecnicoId: 2, clienteId: 4 },
+  { id: "3", titulo: "Manutenção Preventiva", status: "concluido", tecnicoId: 5, clienteId: 6 },
+  { id: "4", titulo: "Configuração de Rede", status: "avaliado", tecnicoId: 5, clienteId: 3 },
+  { id: "5", titulo: "Atualização de Sistema", status: "cancelado", tecnicoId: 2, clienteId: 4 },
+]
+
+// Mock users for demo
+const mockUsers = [
+  { id: 1, nome: "Admin User", role: "admin", especialidade: "Gestão", email: "admin@example.com", telefone: "1111-1111" },
+  { id: 2, nome: "Técnico João", role: "tecnico", especialidade: "Hardware", email: "joao@example.com", telefone: "2222-2222" },
+  { id: 3, nome: "Cliente Maria", role: "cliente", email: "maria@example.com", telefone: "3333-3333" },
+  { id: 4, nome: "Cliente José", role: "cliente", email: "jose@example.com", telefone: "4444-4444" },
+  { id: 5, nome: "Técnico Ana", role: "tecnico", especialidade: "Software", email: "ana@example.com", telefone: "5555-5555" },
+  { id: 6, nome: "Cliente Carla", role: "cliente", email: "carla@example.com", telefone: "6666-6666" },
+]
+
+interface Order {
+  id: string
+  titulo: string
+  descricao?: string
+  dataHora?: Date
+  endereco?: string
+  status: OrderStatus
+  tecnicoId?: number
+  clienteId: number
+  motivoCancelamento?: string
+}
+
+type OrderStatus =
+  | "pendente"
+  | "aceito"
+  | "em_andamento"
+  | "concluido"
+  | "cancelado"
+  | "avaliado"
+
+function getUserById(id: number | string) {
+  return mockUsers.find((u) => u.id === Number(id)) || null;
 }
 
 export function OrderCard({ order, onCancel, onComplete, onAccept, onRate }: OrderCardProps) {
@@ -65,7 +105,7 @@ export function OrderCard({ order, onCancel, onComplete, onAccept, onRate }: Ord
         <div className="space-y-2 text-xs sm:text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Calendar className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0" />
-            <span className="truncate">{format(order.dataHora, "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}</span>
+            <span className="truncate">{format(order.dataHora ?? "", "dd 'de' MMMM 'às' HH:mm", { locale: ptBR })}</span>
           </div>
           <div className="flex items-start gap-2 text-muted-foreground">
             <MapPin className="h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 mt-0.5" />

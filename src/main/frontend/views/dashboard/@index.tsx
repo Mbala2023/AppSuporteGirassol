@@ -6,17 +6,104 @@ import { Navbar } from "@/components/navbar"
 import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { mockOrders, mockUsers, mockRatings } from "@/lib/mock-data"
-import type { DashboardStats, TimePeriod } from "@/lib/types"
 import { Package, Clock, CheckCircle, XCircle, Users, Wrench, Star, TrendingUp } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { TechnicianRanking } from "@/components/technician-ranking"
 import { RatingChart } from "@/components/rating-chart"
-import { getTechnicianStatsByPeriod, getRatingDataByPeriod } from "@/lib/dashboard-utils"
+import { getTechnicianStatsByPeriod, getRatingDataByPeriod, Order, Rating } from "@/lib/dashboard-utils"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { AddUserDialog } from "@/components/add-user-dialog"
-import { UserManagementCard } from "@/components/user-management-card"
+import { UserManagementCard, User } from "@/components/user-management-card"
+
+// Mock data for dashboard demo
+const mockOrders: Order[] = [
+  { id: "1", titulo: "Instalação de Software", status: "pendente", tecnicoId: 2, createdAt: new Date() },
+  { id: "2", titulo: "Troca de Peça", status: "em_andamento", tecnicoId: 2, createdAt: new Date() },
+  { id: "3", titulo: "Manutenção Preventiva", status: "concluido", tecnicoId: 5, createdAt: new Date() },
+  { id: "4", titulo: "Configuração de Rede", status: "avaliado", tecnicoId: 5, createdAt: new Date() },
+  { id: "5", titulo: "Atualização de Sistema", status: "cancelado", tecnicoId: 2, createdAt: new Date() },
+]
+
+const mockUsers: User[] = [
+  {
+    id: 1,
+    nome: "Admin User",
+    email: "admin@email.com",
+    telefone: "(11) 90000-0001",
+    role: "admin",
+    especialidade: "Gestão",
+    avaliacaoMedia: 4.9,
+    totalAvaliacoes: 100,
+  },
+  {
+    id: 2,
+    nome: "Técnico João",
+    email: "joao.tecnico@email.com",
+    telefone: "(11) 90000-0002",
+    role: "tecnico",
+    especialidade: "Hardware",
+    avaliacaoMedia: 4.7,
+    totalAvaliacoes: 80,
+  },
+  {
+    id: 3,
+    nome: "Cliente Maria",
+    email: "maria.cliente@email.com",
+    telefone: "(11) 90000-0003",
+    role: "cliente",
+    avaliacaoMedia: undefined,
+    totalAvaliacoes: undefined,
+  },
+  {
+    id: 4,
+    nome: "Cliente José",
+    email: "jose.cliente@email.com",
+    telefone: "(11) 90000-0004",
+    role: "cliente",
+    avaliacaoMedia: undefined,
+    totalAvaliacoes: undefined,
+  },
+  {
+    id: 5,
+    nome: "Técnico Ana",
+    email: "ana.tecnico@email.com",
+    telefone: "(11) 90000-0005",
+    role: "tecnico",
+    especialidade: "Software",
+    avaliacaoMedia: 4.8,
+    totalAvaliacoes: 90,
+  },
+  {
+    id: 6,
+    nome: "Cliente Carla",
+    email: "carla.cliente@email.com",
+    telefone: "(11) 90000-0006",
+    role: "cliente",
+    avaliacaoMedia: undefined,
+    totalAvaliacoes: undefined,
+  },
+]
+
+const mockRatings: Rating[] = [
+  { id: "1", estrelas: 5, tecnicoId: 2, createdAt: new Date("2026-01-10") },
+  { id: "2", estrelas: 4, tecnicoId: 5, createdAt: new Date("2026-01-11") },
+  { id: "3", estrelas: 3, tecnicoId: 2, createdAt: new Date("2026-01-12") },
+  { id: "4", estrelas: 5, tecnicoId: 5, createdAt: new Date("2026-01-13") },
+]
+
+type TimePeriod = "diario" | "semanal" | "mensal" | "anual"
+
+interface DashboardStats {
+  totalPedidos: number
+  pedidosPendentes: number
+  pedidosEmAndamento: number
+  pedidosConcluidos: number
+  pedidosCancelados: number
+  totalClientes: number
+  totalTecnicos: number
+  avaliacaoMediaGeral: number
+}
 
 export default function DashboardPage() {
   const { user, isAuthenticated, isAdmin } = useAuth()

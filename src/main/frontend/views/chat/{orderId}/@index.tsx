@@ -6,8 +6,6 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router";
 import { Navbar } from "@/components/navbar";
 import { useAuth } from "@/lib/auth-context";
-import type { ChatMessage, Order } from "@/lib/types";
-import { mockOrders, getUserById } from "@/lib/mock-data";
 import {
   Card,
   CardContent,
@@ -25,7 +23,7 @@ import { ptBR, se } from "date-fns/locale";
 import { AttendanceTimer } from "@/components/attendance-timer";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
-import { time } from "node:console";
+
 
 /*const chatMessagesStore: ChatMessage[] = [
   {
@@ -71,9 +69,9 @@ export default function ChatPage() {
   const router = useNavigate();
   const params = useParams();
   const orderId = params.orderId as string;
-  const [order, setOrder] = useState<Order>(mockOrders[0]);
+  const [order, setOrder] = useState<any>();
 
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<any[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const stompClientRef = useRef<Client>(null);
@@ -179,6 +177,14 @@ export default function ChatPage() {
     };
   }, []);
 
+
+  const otherUser = {
+    id: order?.tecnicoId === user?.id ? order?.clienteId : order?.tecnicoId,
+    nome: "teste",
+    role: "teste",
+    especialidade: "teste"
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <Navbar />
@@ -198,13 +204,13 @@ export default function ChatPage() {
             <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
               <div className="flex-1">
                 <CardTitle className="text-base sm:text-lg">
-                  {order.titulo}
+                  {order?.titulo}
                 </CardTitle>
                 <CardDescription className="text-xs sm:text-sm">
-                  Pedido #{order.id}
+                  Pedido #{order?.id}
                 </CardDescription>
               </div>
-              <Badge className="self-start">{order.status}</Badge>
+              <Badge className="self-start">{order?.status}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -230,11 +236,11 @@ export default function ChatPage() {
           </CardContent>
         </Card>
 
-        {(order.status === "em_andamento" || order.status === "aceito") && (
+        {(order?.status === "em_andamento" || order?.status === "aceito") && (
           <div className="mb-4">
             <AttendanceTimer
-              startTime={order.inicioAtendimento}
-              status={order.status}
+              startTime={order?.inicioAtendimento}
+              status={order?.status}
             />
           </div>
         )}
@@ -252,7 +258,7 @@ export default function ChatPage() {
               ) : (
                 messages.map((message) => {
                   const sender = message.sender;
-                  const isCurrentUser = message.senderId === user?.id;
+                  const isCurrentUser = message.sender === user?.id;
 
                   return (
                     <div
@@ -263,7 +269,7 @@ export default function ChatPage() {
                     >
                       <Avatar className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
                         <AvatarFallback className="text-xs">
-                          {sender ? getInitials(sender.nome) : "?"}
+                          {sender ? getInitials(sender) : "?"}
                         </AvatarFallback>
                       </Avatar>
                       <div

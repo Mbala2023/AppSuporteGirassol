@@ -35,7 +35,7 @@ import { visualizer } from 'rollup-plugin-visualizer';
 import reactPlugin from '@vitejs/plugin-react';
 
 
-
+import vitePluginFileSystemRouter from '@vaadin/hilla-file-router/vite-plugin.js';
 
 const frontendFolder = path.resolve(__dirname, settings.frontendFolder);
 const themeFolder = path.resolve(frontendFolder, settings.themeFolder);
@@ -652,7 +652,7 @@ export const vaadinConfig: UserConfigFn = (env) => {
           }
         }
       },
-      
+      vitePluginFileSystemRouter({isDevMode: devMode}),
       checker({
         typescript: true
       }),

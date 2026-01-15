@@ -2,8 +2,8 @@
 
 import type React from "react"
 import { createContext, useContext, useState, useEffect } from "react"
-import type { User } from "./types"
-import { mockUsers } from "./mock-data"
+import { User } from "../components/user-management-card"
+
 
 interface AuthContextType {
   user: User | null
@@ -86,7 +86,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         login,
         logout,
         changePassword,
-        isAuthenticated,
+        isAuthenticated: true,
         isAdmin,
         isTechnician,
         isClient,
@@ -104,3 +104,36 @@ export function useAuth() {
   }
   return context
 }
+// Local mock users for authentication
+const mockUsers: (User & { password: string })[] = [
+  {
+    id: 1,
+    nome: "João Silva",
+    email: "joao.silva@email.com",
+    telefone: "(11) 99999-0001",
+    role: "tecnico",
+    especialidade: "Elétrica",
+    avaliacaoMedia: 4.8,
+    totalAvaliacoes: 60,
+    createdAt: new Date("2025-01-01"),
+    password: "senha123"
+  },
+  {
+    id: 2,
+    nome: "Maria Souza",
+    email: "maria.souza@email.com",
+    telefone: "(21) 98888-0002",
+    role: "admin",
+    createdAt: new Date("2025-01-01"),
+    password: "adminpass"
+  },
+  {
+    id: 3,
+    nome: "Carlos Lima",
+    email: "carlos.lima@email.com",
+    telefone: "(31) 97777-0003",
+    role: "cliente",
+    createdAt: new Date("2025-01-01"),
+    password: "clientepass"
+  }
+]

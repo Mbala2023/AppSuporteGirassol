@@ -4,14 +4,66 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
-import type { TechnicianStats } from "@/lib/types"
 import { Star, Trophy, TrendingUp, Award, Clock } from "lucide-react"
 
 interface TechnicianRankingProps {
   stats: TechnicianStats[]
 }
 
-export function TechnicianRanking({ stats }: TechnicianRankingProps) {
+interface TechnicianStats {
+  tecnicoId: number
+  nome: string
+  especialidade: string
+  score: number
+  totalAtendimentos: number
+  tempoMedioAtendimento: number
+  atendimentosConcluidos: number
+  avaliacaoMedia: number
+  totalAvaliacoes: number
+  taxaConclusao: number
+}
+
+// Provide mock data if stats is not passed (for development/demo)
+const mockStats: TechnicianStats[] = [
+  {
+    tecnicoId: 1,
+    nome: "João Silva",
+    especialidade: "Elétrica",
+    score: 92,
+    totalAtendimentos: 120,
+    tempoMedioAtendimento: 45,
+    atendimentosConcluidos: 115,
+    avaliacaoMedia: 4.8,
+    totalAvaliacoes: 60,
+    taxaConclusao: 96,
+  },
+  {
+    tecnicoId: 2,
+    nome: "Maria Souza",
+    especialidade: "Hidráulica",
+    score: 88,
+    totalAtendimentos: 110,
+    tempoMedioAtendimento: 50,
+    atendimentosConcluidos: 105,
+    avaliacaoMedia: 4.6,
+    totalAvaliacoes: 55,
+    taxaConclusao: 95,
+  },
+  {
+    tecnicoId: 3,
+    nome: "Carlos Lima",
+    especialidade: "Pintura",
+    score: 80,
+    totalAtendimentos: 90,
+    tempoMedioAtendimento: 60,
+    atendimentosConcluidos: 85,
+    avaliacaoMedia: 4.3,
+    totalAvaliacoes: 40,
+    taxaConclusao: 94,
+  },
+];
+
+export function TechnicianRanking({ stats = mockStats }: TechnicianRankingProps) {
   const getPositionIcon = (index: number) => {
     if (index === 0) return <Trophy className="h-5 w-5 text-yellow-500" />
     if (index === 1) return <Award className="h-5 w-5 text-gray-400" />

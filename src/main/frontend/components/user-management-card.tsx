@@ -16,47 +16,83 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
 import { Star, Shield, ShieldCheck, Trash2 } from "lucide-react"
-import { mockUsers } from "@/lib/mock-data"
-import type { User } from "@/lib/types"
+// Local mock data and type fallback
+export type User = {
+  id: number;
+  nome: string;
+  email: string;
+  telefone: string;
+  role: "admin" | "tecnico" | "cliente";
+  especialidade?: string;
+  avaliacaoMedia?: number;
+  totalAvaliacoes?: number;
+  createdAt?: Date;
+  descricao?: string;
+};
+
+const mockUsers: User[] = [
+  {
+    id: 1,
+    nome: "João Silva",
+    email: "joao.silva@email.com",
+    telefone: "(11) 99999-0001",
+    role: "tecnico",
+    especialidade: "Elétrica",
+    avaliacaoMedia: 4.8,
+    totalAvaliacoes: 60,
+  },
+  {
+    id: 2,
+    nome: "Maria Souza",
+    email: "maria.souza@email.com",
+    telefone: "(21) 98888-0002",
+    role: "admin",
+    especialidade: "Hidráulica",
+    avaliacaoMedia: 4.6,
+    totalAvaliacoes: 55,
+  },
+];
 import { toast } from "sonner"
 
+
 interface UserManagementCardProps {
-  user: User
+  user?: User
 }
 
 export function UserManagementCard({ user }: UserManagementCardProps) {
-  const [currentUser, setCurrentUser] = useState(user)
+  // Use provided user or fallback to first mock user
+  const [currentUser, setCurrentUser] = useState(user || mockUsers[0])
 
   const handlePromoteToAdmin = () => {
-    const userIndex = mockUsers.findIndex((u) => u.id === user.id)
+    const userIndex = mockUsers.findIndex((u) => u.id === currentUser.id)
     if (userIndex !== -1) {
       mockUsers[userIndex].role = "admin"
       setCurrentUser({ ...currentUser, role: "admin" })
       toast("Usuário promovido!", {
-        description: `${user.nome} agora é um administrador.`,
+        description: `${currentUser.nome} agora é um administrador.`,
       })
       window.location.reload()
     }
   }
 
   const handleDemoteFromAdmin = () => {
-    const userIndex = mockUsers.findIndex((u) => u.id === user.id)
+    const userIndex = mockUsers.findIndex((u) => u.id === currentUser.id)
     if (userIndex !== -1) {
       mockUsers[userIndex].role = "tecnico"
       setCurrentUser({ ...currentUser, role: "tecnico" })
       toast("Permissões alteradas", {
-        description: `${user.nome} agora é um técnico.`,
+        description: `${currentUser.nome} agora é um técnico.`,
       })
       window.location.reload()
     }
   }
 
   const handleDeleteUser = () => {
-    const userIndex = mockUsers.findIndex((u) => u.id === user.id)
+    const userIndex = mockUsers.findIndex((u) => u.id === currentUser.id)
     if (userIndex !== -1) {
       mockUsers.splice(userIndex, 1)
       toast("Usuário removido", {
-        description: `${user.nome} foi removido do sistema.`,
+        description: `${currentUser.nome} foi removido do sistema.`,
       })
       window.location.reload()
     }

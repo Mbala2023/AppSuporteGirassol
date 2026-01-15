@@ -7,10 +7,56 @@ import { OrderCard } from "@/components/order-card";
 import { CancelOrderDialog } from "@/components/cancel-order-dialog";
 import { RatingDialog } from "@/components/rating-dialog";
 import { useAuth } from "@/lib/auth-context";
-import type { Order, OrderStatus, ChatMessage } from "@/lib/types";
-import { mockOrders, getUserById } from "@/lib/mock-data";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
+
+const mockOrders: Order[] = [
+  { id: "1", titulo: "Instalação de Software", status: "pendente", tecnicoId: 2, clienteId: 3 },
+  { id: "2", titulo: "Troca de Peça", status: "em_andamento", tecnicoId: 2, clienteId: 4 },
+  { id: "3", titulo: "Manutenção Preventiva", status: "concluido", tecnicoId: 5, clienteId: 6 },
+  { id: "4", titulo: "Configuração de Rede", status: "avaliado", tecnicoId: 5, clienteId: 3 },
+  { id: "5", titulo: "Atualização de Sistema", status: "cancelado", tecnicoId: 2, clienteId: 4 },
+]
+
+// Mock users for demo
+const mockUsers = [
+  { id: 1, nome: "Admin User", role: "admin", especialidade: "Gestão" },
+  { id: 2, nome: "Técnico João", role: "tecnico", especialidade: "Hardware" },
+  { id: 3, nome: "Cliente Maria", role: "cliente" },
+  { id: 4, nome: "Cliente José", role: "cliente" },
+  { id: 5, nome: "Técnico Ana", role: "tecnico", especialidade: "Software" },
+  { id: 6, nome: "Cliente Carla", role: "cliente" },
+]
+
+function getUserById(id: number | string) {
+  return mockUsers.find((u) => u.id === Number(id)) || null;
+}
+
+type OrderStatus =
+  | "pendente"
+  | "aceito"
+  | "em_andamento"
+  | "concluido"
+  | "avaliado"
+  | "cancelado";
+
+interface Order {
+  id: string;
+  titulo: string;
+  status: OrderStatus;
+  tecnicoId?: number;
+  clienteId: number;
+}
+
+interface ChatMessage {
+  id: string;
+  orderId: string;
+  senderId: number;
+  senderRole: string;
+  mensagem: string;
+  createdAt: Date;
+  lida: boolean;
+}
 
 export default function PedidosPage() {
   const { user, isAuthenticated, isClient, isTechnician } = useAuth();

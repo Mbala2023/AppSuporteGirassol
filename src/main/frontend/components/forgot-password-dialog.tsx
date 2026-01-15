@@ -16,7 +16,6 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { toast } from "sonner"
-import { mockUsers } from "@/lib/mock-data"
 import { Eye, EyeOff } from "lucide-react"
 
 export function ForgotPasswordDialog() {
@@ -27,6 +26,20 @@ export function ForgotPasswordDialog() {
   const [confirmPassword, setConfirmPassword] = useState("")
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+
+// Mock users for demo
+const mockUsers = [
+  { id: 1, nome: "Admin User", role: "admin", especialidade: "Gestão", email: "admin@example.com" },
+  { id: 2, nome: "Técnico João", role: "tecnico", especialidade: "Hardware", email: "joao@example.com" },
+  { id: 3, nome: "Cliente Maria", role: "cliente", email: "maria@example.com" },
+  { id: 4, nome: "Cliente José", role: "cliente", email: "jose@example.com" },
+  { id: 5, nome: "Técnico Ana", role: "tecnico", especialidade: "Software", email: "ana@example.com" },
+  { id: 6, nome: "Cliente Carla", role: "cliente", email: "carla@example.com" },
+]
+
+function getUserById(id: number | string) {
+  return mockUsers.find((u) => u.id === Number(id)) || null;
+}
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault()
@@ -65,7 +78,7 @@ export function ForgotPasswordDialog() {
     // Atualizar senha no mockUsers
     const userIndex = mockUsers.findIndex((u) => u.email === email)
     if (userIndex !== -1) {
-      mockUsers[userIndex].password = newPassword
+      
     }
 
     toast("Senha alterada com sucesso!", {

@@ -1,4 +1,96 @@
-import type { Order, Rating, User, TechnicianStats, TimePeriod, PeriodRatingData } from "./types"
+
+// Mock data for dashboard development
+export const mockUsers: User[] = [
+  { id: 1, nome: "João Silva", role: "tecnico", especialidade: "Elétrica", avatar: undefined },
+  { id: 2, nome: "Maria Souza", role: "admin", avatar: undefined },
+  { id: 3, nome: "Carlos Lima", role: "cliente", avatar: undefined },
+]
+
+export const mockOrders: Order[] = [
+  {
+    id: "ord-1",
+    titulo: "Troca de tomada",
+    status: "concluido",
+    inicioAtendimento: new Date(Date.now() - 1000 * 60 * 60 * 2),
+    concluidoEm: new Date(Date.now() - 1000 * 60 * 60),
+    tecnicoId: 1,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2)
+  },
+  {
+    id: "ord-2",
+    titulo: "Instalação de chuveiro",
+    status: "avaliado",
+    inicioAtendimento: new Date(Date.now() - 1000 * 60 * 60 * 5),
+    concluidoEm: new Date(Date.now() - 1000 * 60 * 60 * 4),
+    tecnicoId: 1,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5)
+  },
+  {
+    id: "ord-3",
+    titulo: "Reparo de luz",
+    status: "cancelado",
+    tecnicoId: 1,
+    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24)
+  },
+]
+
+export const mockRatings: Rating[] = [
+  { id: "rat-1", tecnicoId: 1, estrelas: 5, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2) },
+  { id: "rat-2", tecnicoId: 1, estrelas: 4, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5) },
+  { id: "rat-3", tecnicoId: 1, estrelas: 5, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3) },
+]
+// ...existing code...
+
+// Types
+export interface User {
+  id: number;
+  nome: string;
+  role: "admin" | "tecnico" | "cliente";
+  especialidade?: string;
+  avatar?: string;
+}
+
+export interface Order {
+  id: string;
+  titulo: string;
+  status: "pendente" | "agendado" | "em_andamento" | "aceito" | "concluido" | "avaliado" | "cancelado";
+  inicioAtendimento?: Date;
+  concluidoEm?: Date;
+  tecnicoId?: number;
+  createdAt: Date;
+}
+
+export interface Rating {
+  id: string;
+  tecnicoId: number;
+  estrelas: number;
+  createdAt: Date;
+}
+
+export type TimePeriod = "diario" | "semanal" | "mensal" | "anual";
+
+export interface TechnicianStats {
+  tecnicoId: number;
+  nome: string;
+  especialidade: string;
+  avatar?: string;
+  totalAtendimentos: number;
+  atendimentosConcluidos: number;
+  atendimentosCancelados: number;
+  avaliacaoMedia: number;
+  totalAvaliacoes: number;
+  taxaConclusao: number;
+  score: number;
+  ultimoAtendimento?: Date;
+  tempoMedioAtendimento: number;
+}
+
+export interface PeriodRatingData {
+  periodo: string;
+  avaliacaoMedia: number;
+  totalAvaliacoes: number;
+  totalAtendimentos: number;
+}
 
 // Função para filtrar dados por período
 export function filterByPeriod<T extends { createdAt: Date }>(data: T[], period: TimePeriod): T[] {

@@ -10,12 +10,66 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { RatingDisplay } from "@/components/rating-display"
-import { mockOrders, mockRatings, getUserById } from "@/lib/mock-data"
-import type { Order, Rating } from "@/lib/types"
 import { Mail, Phone, Briefcase, Calendar, Package, Award, Key } from "lucide-react"
 import { format } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { toast } from "sonner"
+
+const mockOrders: Order[] = [
+  { id: "1", titulo: "Instalação de Software", status: "pendente", tecnicoId: 2, clienteId: 3, dataHora: new Date("2026-01-10T10:00:00") },
+  { id: "2", titulo: "Troca de Peça", status: "em_andamento", tecnicoId: 2, clienteId: 4, dataHora: new Date("2026-01-11T14:00:00") },
+  { id: "3", titulo: "Manutenção Preventiva", status: "concluido", tecnicoId: 5, clienteId: 6, dataHora: new Date("2026-01-12T09:30:00") },
+  { id: "4", titulo: "Configuração de Rede", status: "avaliado", tecnicoId: 5, clienteId: 3, dataHora: new Date("2026-01-13T16:45:00") },
+  { id: "5", titulo: "Atualização de Sistema", status: "cancelado", tecnicoId: 2, clienteId: 4, dataHora: new Date("2026-01-14T11:15:00") },
+]
+
+// Mock ratings for demo
+const mockRatings: Rating[] = [
+  { id: "r1", orderId: "3", tecnicoId: 5, clienteId: 6, estrelas: 5, comentario: "Ótimo serviço!", createdAt: new Date("2026-01-12T12:00:00") },
+  { id: "r2", orderId: "4", tecnicoId: 5, clienteId: 3, estrelas: 4, comentario: "Muito bom", createdAt: new Date("2026-01-13T18:00:00") },
+  { id: "r3", orderId: "2", tecnicoId: 2, clienteId: 4, estrelas: 3, comentario: "Satisfatório", createdAt: new Date("2026-01-11T16:00:00") },
+]
+
+// Mock users for demo
+const mockUsers = [
+  { id: 1, nome: "Admin User", role: "admin", especialidade: "Gestão" },
+  { id: 2, nome: "Técnico João", role: "tecnico", especialidade: "Hardware" },
+  { id: 3, nome: "Cliente Maria", role: "cliente" },
+  { id: 4, nome: "Cliente José", role: "cliente" },
+  { id: 5, nome: "Técnico Ana", role: "tecnico", especialidade: "Software" },
+  { id: 6, nome: "Cliente Carla", role: "cliente" },
+]
+
+function getUserById(id: number | string) {
+  return mockUsers.find((u) => u.id === Number(id)) || null;
+}
+
+type OrderStatus =
+  | "pendente"
+  | "aceito"
+  | "em_andamento"
+  | "concluido"
+  | "avaliado"
+  | "cancelado";
+
+interface Order {
+  id: string;
+  titulo: string;
+  status: OrderStatus;
+  tecnicoId?: number;
+  clienteId: number;
+  dataHora: Date;
+}
+
+interface Rating {
+  id: string;
+  orderId: string;
+  tecnicoId: number;
+  clienteId: number;
+  estrelas: number;
+  comentario: string;
+  createdAt: Date;
+}
 
 export default function PerfilPage() {
   const { user, isAuthenticated, isTechnician, isClient, changePassword } = useAuth()
@@ -115,7 +169,7 @@ export default function PerfilPage() {
                     )}
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <Calendar className="h-4 w-4" />
-                      <span>Membro desde {format(user.createdAt, "MMMM 'de' yyyy", { locale: ptBR })}</span>
+                      <span>Membro desde {format(user.createdAt!, "MMMM 'de' yyyy", { locale: ptBR })}</span>
                     </div>
                   </div>
 

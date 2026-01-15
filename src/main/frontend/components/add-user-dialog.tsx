@@ -18,9 +18,19 @@ import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Textarea } from "@/components/ui/textarea"
 import { UserPlus, Eye, EyeOff } from "lucide-react"
-import { mockUsers } from "@/lib/mock-data"
-import type { UserRole } from "@/lib/types"
 import {toast} from "sonner"
+
+// Mock users for demo
+const mockUsers = [
+  { id: 1, nome: "Admin User", role: "admin", especialidade: "Gestão", email: "admin@example.com" },
+  { id: 2, nome: "Técnico João", role: "tecnico", especialidade: "Hardware", email: "joao@example.com" },
+  { id: 3, nome: "Cliente Maria", role: "cliente", email: "maria@example.com" },
+  { id: 4, nome: "Cliente José", role: "cliente", email: "jose@example.com" },
+  { id: 5, nome: "Técnico Ana", role: "tecnico", especialidade: "Software", email: "ana@example.com" },
+  { id: 6, nome: "Cliente Carla", role: "cliente", email: "carla@example.com" },
+]
+
+type UserRole = "cliente" | "tecnico" | "admin"
 
 export function AddUserDialog() {
   const [open, setOpen] = useState(false)
@@ -47,22 +57,10 @@ export function AddUserDialog() {
 
     // Criar novo usuário
     const newUser = {
-      id: `USER${mockUsers.length + 1}`,
-      nome,
+      id: mockUsers.length + 1,
+      nome, 
       email,
-      password,
-      telefone,
       role,
-      ...(role === "tecnico" || role === "admin"
-        ? {
-            especialidade,
-            descricao,
-            avaliacaoMedia: 0,
-            totalAvaliacoes: 0,
-            totalAtendimentos: 0,
-          }
-        : {}),
-      createdAt: new Date(),
     }
 
     mockUsers.push(newUser)

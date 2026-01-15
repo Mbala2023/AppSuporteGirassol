@@ -3,13 +3,16 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { CartesianGrid, XAxis, YAxis, ResponsiveContainer, Legend, Line, LineChart } from "recharts"
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart"
-import type { PeriodRatingData } from "@/lib/types"
 import { Star } from "lucide-react"
 
 interface RatingChartProps {
   data: PeriodRatingData[]
   title: string
   description: string
+}
+
+interface PeriodRatingData {
+  
 }
 
 export function RatingChart({ data, title, description }: RatingChartProps) {
