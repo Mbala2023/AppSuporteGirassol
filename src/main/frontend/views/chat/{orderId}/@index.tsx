@@ -71,7 +71,7 @@ export default function ChatPage() {
   const orderId = params.orderId as string;
   const [order, setOrder] = useState<any>();
 
-  const [messages, setMessages] = useState<any[]>([]);
+  const [messages, setMessages] = useState<{id?: string, sender: string, content: string, timestamp: string}[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const stompClientRef = useRef<Client>(null);
@@ -143,7 +143,6 @@ export default function ChatPage() {
   if (!isAuthenticated) {
     return null;
   }
-
 
   useEffect(() => {
     const socket = new SockJS("http://localhost:8080/ws");
@@ -258,7 +257,7 @@ export default function ChatPage() {
               ) : (
                 messages.map((message) => {
                   const sender = message.sender;
-                  const isCurrentUser = message.sender === user?.id;
+                  const isCurrentUser = message.sender === user?.id ?? "";
 
                   return (
                     <div

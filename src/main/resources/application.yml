@@ -1,2 +1,9 @@
+spring:
+  threads:
+    virtual: enabled
+
 vaadin:
   launch-browser: true
+
+ai:
+  token: ${GEMINI_TOKEN:1}
