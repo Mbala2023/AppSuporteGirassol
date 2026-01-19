@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
@@ -21,9 +22,12 @@ public class Chat {
 
   private Long userId; // ID do usuário que iniciou o chat
   private boolean isActive; // Se o chat está ativo ou finalizado
-  private Long operatorId; // ID do operador, se o chat foi transferido
+  @ManyToOne(fetch = FetchType.LAZY)
+  private Usuario usuario; // ID do operador, se o chat foi transferido
+  @OneToOne(fetch = FetchType.LAZY)
+  private Pedido pedido;
 
   @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL)
-  private List<Message> messages; // Relacionamento com as mensagens
+  private List<@NonNull Message> messages; // Relacionamento com as mensagens
 }
 

@@ -1,11 +1,8 @@
-"use client";
-
 import type React from "react";
 
 import { useState, useEffect, useRef } from "react";
 import { useNavigate, useParams, Link } from "react-router";
 import { Navbar } from "@/components/navbar";
-import { useAuth } from "@/lib/auth-context";
 import {
   Card,
   CardContent,
@@ -23,7 +20,13 @@ import { ptBR, se } from "date-fns/locale";
 import { AttendanceTimer } from "@/components/attendance-timer";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
-
+import * as ChatService from "@/generated/ChatService";
+import Chat from "@/generated/ao/appsuportegirassol/models/Chat";
+import Message from "@/generated/ao/appsuportegirassol/models/Message";
+import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
+import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
+import { getAuthenticatedUser } from "Frontend/auth";
+import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
 
 /*const chatMessagesStore: ChatMessage[] = [
   {
@@ -34,44 +37,22 @@ import { Client } from "@stomp/stompjs";
     mensagem: "Olá, a que horas você pode vir?",
     createdAt: new Date("2025-01-10T13:30:00"),
     lida: true,
-  },
-  {
-    id: "MSG002",
-    orderId: "ORD001",
-    senderId: "1",
-    senderRole: "tecnico",
-    mensagem: "Boa tarde! Posso chegar às 14h. Está bom para você?",
-    createdAt: new Date("2025-01-10T13:35:00"),
-    lida: true,
-  },
-  {
-    id: "MSG003",
-    orderId: "ORD001",
-    senderId: "3",
-    senderRole: "cliente",
-    mensagem: "Perfeito! Estarei esperando.",
-    createdAt: new Date("2025-01-10T13:37:00"),
-    lida: true,
-  },
-  {
-    id: "MSG004",
-    orderId: "ORD001",
-    senderId: "1",
-    senderRole: "tecnico",
-    mensagem: "Já estou a caminho!",
-    createdAt: new Date("2025-01-10T13:50:00"),
-    lida: false,
-  },
+  }
 ]*/
 
+export const config: ViewConfig = {
+    loginRequired: true,
+    rolesAllowed: ['ROLE_USER'],
+};
+
 export default function ChatPage() {
-  const { user, isAuthenticated } = useAuth();
   const router = useNavigate();
   const params = useParams();
   const orderId = params.orderId as string;
-  const [order, setOrder] = useState<any>();
+  const [order, setOrder] = useState<Pedido>();
+  const user = getAuthenticatedUser();
 
-  const [messages, setMessages] = useState<{id?: string, sender: string, content: string, timestamp: string}[]>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const stompClientRef = useRef<Client>(null);
@@ -82,17 +63,22 @@ export default function ChatPage() {
       console.log("Sending message:", name);
       stompClient.publish({
         destination: "/app/chat/" + orderId,
-        body: JSON.stringify({ 
-          sender: 'user',
+        body: JSON.stringify({
+          sender: "user",
+          senderId: "",
           content: newMessage,
           timestamp: new Date().toISOString(),
-         }),
+        }),
       });
 
       setNewMessage("");
       setMessages((prev) => [
         ...prev,
-        { sender: "user", content: newMessage, timestamp: new Date().toISOString() },
+        {
+          sender: "user",
+          content: newMessage,
+          timestamp: new Date().toISOString(),
+        },
       ]);
     } else {
       console.error("Stomp client is not connected");
@@ -100,36 +86,17 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router("/");
-      return;
-    }
-
-    /* Buscar pedido
-    const foundOrder = mockOrders.find((o) => o.id === orderId);
-    if (!foundOrder) {
-      router("/pedidos");
-      return;
-    }
-
-    // Verificar se o usuário tem acesso a este chat
-    if (
-      foundOrder.clienteId !== user?.id &&
-      foundOrder.tecnicoId !== user?.id
-    ) {
-      router("/pedidos");
-      return;
-    }
-
-    setOrder(foundOrder);
-    */
-  }, [isAuthenticated, user, orderId, router]);
+    ChatService.getChat(Number(orderId)).then((chat: Chat | undefined) => {
+      setMessages(chat?.messages ?? []);
+    }).catch((error) => {
+      console.error("Error fetching chat:", error);
+    });
+  }, [orderId, router]);
 
   useEffect(() => {
     // Scroll para a última mensagem
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
-
 
   const getInitials = (name: string) => {
     return name
@@ -139,10 +106,6 @@ export default function ChatPage() {
       .toUpperCase()
       .slice(0, 2);
   };
-
-  if (!isAuthenticated) {
-    return null;
-  }
 
   useEffect(() => {
     const socket = new SockJS("http://localhost:8080/ws");
@@ -156,10 +119,7 @@ export default function ChatPage() {
         console.log("Connected to WebSocket");
         stompClient.subscribe("/topic/chat/" + orderId, (response) => {
           console.log("Received message:", response.body);
-          setMessages((prev) => [
-            ...prev,
-            JSON.parse(response.body),
-          ]);
+          setMessages((prev) => [...prev, JSON.parse(response.body)]);
         });
       },
       onStompError: (frame) => {
@@ -176,12 +136,11 @@ export default function ChatPage() {
     };
   }, []);
 
-
   const otherUser = {
-    id: order?.tecnicoId === user?.id ? order?.clienteId : order?.tecnicoId,
+    username: order?.tecnico?.username === user?.username ? order?.cliente?.username : order?.tecnico?.username,
     nome: "teste",
     role: "teste",
-    especialidade: "teste"
+    especialidade: "teste",
   };
 
   return (
@@ -209,7 +168,7 @@ export default function ChatPage() {
                   Pedido #{order?.id}
                 </CardDescription>
               </div>
-              <Badge className="self-start">{order?.status}</Badge>
+              <Badge className="self-start">{order?.estado}</Badge>
             </div>
           </CardHeader>
           <CardContent>
@@ -235,11 +194,11 @@ export default function ChatPage() {
           </CardContent>
         </Card>
 
-        {(order?.status === "em_andamento" || order?.status === "aceito") && (
+        {(order?.estado === PedidoEstado.EM_ANDAMENTO || order?.estado === PedidoEstado.ACEITO) && (
           <div className="mb-4">
             <AttendanceTimer
-              startTime={order?.inicioAtendimento}
-              status={order?.status}
+              startTime={new Date(order?.dataHora ?? "")}
+              status={order?.estado}
             />
           </div>
         )}
@@ -257,7 +216,7 @@ export default function ChatPage() {
               ) : (
                 messages.map((message) => {
                   const sender = message.sender;
-                  const isCurrentUser = message.sender === user?.id ?? "";
+                  const isCurrentUser = (message.usuario?.username ?? "") === (user?.username ?? "");
 
                   return (
                     <div
@@ -284,11 +243,13 @@ export default function ChatPage() {
                           }`}
                         >
                           <p className="text-xs sm:text-sm break-words">
-                            {message.content}
+                            {message.conteudo}
                           </p>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {format(message.timestamp, "HH:mm", { locale: ptBR })}
+                          {format(message.timestamp ?? "", "HH:mm", {
+                            locale: ptBR,
+                          })}
                         </span>
                       </div>
                     </div>
@@ -298,7 +259,13 @@ export default function ChatPage() {
               <div ref={messagesEndRef} />
             </div>
 
-            <form onSubmit={e => {e.preventDefault(); sendMessage()}} className="flex gap-2">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                sendMessage();
+              }}
+              className="flex gap-2"
+            >
               <Input
                 placeholder="Digite sua mensagem..."
                 value={newMessage}

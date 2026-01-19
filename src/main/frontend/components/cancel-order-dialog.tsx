@@ -17,7 +17,7 @@ interface CancelOrderDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onConfirm: (motivo: string) => void
-  orderId: string
+  orderId: number
 }
 
 export function CancelOrderDialog({ open, onOpenChange, onConfirm, orderId }: CancelOrderDialogProps) {

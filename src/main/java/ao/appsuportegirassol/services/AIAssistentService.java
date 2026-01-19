@@ -25,14 +25,14 @@ public class AIAssistentService {
           
           Quando o assunto for algo fora do teu domínio deves passar a conversa para um humano(operador).
           """),
-        UserMessage.from(message.getContent())
+        UserMessage.from(message.getConteudo())
     );
 
     var out = new Message();
 
     out.setChat(message.getChat());
     out.setSender("bot");
-    out.setContent(res.aiMessage().text());
+    out.setConteudo(res.aiMessage().text());
     out.setTimestamp(new Date().toString());
 
     return out;

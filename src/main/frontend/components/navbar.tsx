@@ -1,5 +1,3 @@
-"use client"
-
 import { useNavigate, Link } from "react-router"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
@@ -11,17 +9,19 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { useAuth } from "@/lib/auth-context"
 import { LayoutDashboard, Package, User, LogOut, Menu } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState } from "react"
 import { SunflowerLogo } from "./sunflower-logo"
+import { getAuthenticatedUser, logout } from "Frontend/auth"
 
 export function Navbar() {
-  const { user, logout, isAdmin, isTechnician } = useAuth()
   const pathname = window.location.pathname
   const router = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const user = getAuthenticatedUser()
+  const isAdmin = user?.authorities.includes("ROLE_ADMIN")
+  const isTecnico = user?.authorities.includes("ROLE_TECNICO")
 
   const handleLogout = () => {
     logout()
@@ -120,7 +120,7 @@ export function Navbar() {
                     <div className="flex flex-col">
                       <p className="text-sm font-medium">{user.nome}</p>
                       <p className="text-xs text-muted-foreground capitalize">
-                        {user.role === "admin" ? "Administrador" : user.role === "tecnico" ? "Técnico" : "Cliente"}
+                        {user.authorities.includes("ROLE_ADMIN") ? "Administrador" : user.authorities.includes("ROLE_TECNICO") ? "Técnico" : "Cliente"}
                       </p>
                     </div>
                   </div>
@@ -155,9 +155,9 @@ export function Navbar() {
                 <DropdownMenuLabel>
                   <div className="flex flex-col space-y-1">
                     <p className="text-sm font-medium truncate">{user.nome}</p>
-                    <p className="text-xs text-muted-foreground truncate">{user.email}</p>
+                    <p className="text-xs text-muted-foreground truncate">{user.username}</p>
                     <p className="text-xs text-muted-foreground capitalize">
-                      {user.role === "admin" ? "Administrador" : user.role === "tecnico" ? "Técnico" : "Cliente"}
+                      {user.authorities.includes("ROLE_ADMIN") ? "Administrador" : user.authorities.includes("ROLE_TECNICO") ? "Técnico" : "Cliente"}
                     </p>
                   </div>
                 </DropdownMenuLabel>

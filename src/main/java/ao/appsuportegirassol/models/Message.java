@@ -17,11 +17,12 @@ public class Message {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
 
-  @ManyToOne
+  @OneToOne
   @JoinColumn(name = "chat_id")
   private Chat chat;
-
-  private String sender; // Pode ser "user", "bot" ou "operator"
-  private String content;
+  private String sender; // Pode ser "user", "bot"
+  @ManyToOne(fetch = FetchType.LAZY)
+  private Usuario usuario;
+  private String conteudo;
   private String timestamp; // Data e hora da mensagem
 }

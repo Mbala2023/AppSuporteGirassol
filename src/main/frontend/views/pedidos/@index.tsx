@@ -6,51 +6,20 @@ import { Navbar } from "@/components/navbar";
 import { OrderCard } from "@/components/order-card";
 import { CancelOrderDialog } from "@/components/cancel-order-dialog";
 import { RatingDialog } from "@/components/rating-dialog";
-import { useAuth } from "@/lib/auth-context";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-
-const mockOrders: Order[] = [
-  { id: "1", titulo: "Instalação de Software", status: "pendente", tecnicoId: 2, clienteId: 3 },
-  { id: "2", titulo: "Troca de Peça", status: "em_andamento", tecnicoId: 2, clienteId: 4 },
-  { id: "3", titulo: "Manutenção Preventiva", status: "concluido", tecnicoId: 5, clienteId: 6 },
-  { id: "4", titulo: "Configuração de Rede", status: "avaliado", tecnicoId: 5, clienteId: 3 },
-  { id: "5", titulo: "Atualização de Sistema", status: "cancelado", tecnicoId: 2, clienteId: 4 },
-]
-
-// Mock users for demo
-const mockUsers = [
-  { id: 1, nome: "Admin User", role: "admin", especialidade: "Gestão" },
-  { id: 2, nome: "Técnico João", role: "tecnico", especialidade: "Hardware" },
-  { id: 3, nome: "Cliente Maria", role: "cliente" },
-  { id: 4, nome: "Cliente José", role: "cliente" },
-  { id: 5, nome: "Técnico Ana", role: "tecnico", especialidade: "Software" },
-  { id: 6, nome: "Cliente Carla", role: "cliente" },
-]
-
-function getUserById(id: number | string) {
-  return mockUsers.find((u) => u.id === Number(id)) || null;
-}
-
-type OrderStatus =
-  | "pendente"
-  | "aceito"
-  | "em_andamento"
-  | "concluido"
-  | "avaliado"
-  | "cancelado";
-
-interface Order {
-  id: string;
-  titulo: string;
-  status: OrderStatus;
-  tecnicoId?: number;
-  clienteId: number;
-}
+import Pedido from "@/generated/ao/appsuportegirassol/models/Pedido";
+import Usuario from "@/generated/ao/appsuportegirassol/models/Usuario";
+import * as PedidoService from "@/generated/PedidoService";
+import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
+import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
+import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
+import Message from "Frontend/generated/ao/appsuportegirassol/models/Message";
+import MessageDTO from "Frontend/generated/ao/appsuportegirassol/dto/MessageDTO";
 
 interface ChatMessage {
   id: string;
-  orderId: string;
+  orderId: number;
   senderId: number;
   senderRole: string;
   mensagem: string;
@@ -58,35 +27,36 @@ interface ChatMessage {
   lida: boolean;
 }
 
+export const config: ViewConfig = {
+    loginRequired: true,
+    rolesAllowed: ['ROLE_USER'],
+};
+
 export default function PedidosPage() {
-  const { user, isAuthenticated, isClient, isTechnician } = useAuth();
   const router = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([]);
+  const [orders, setOrders] = useState<Pedido[]>([]);
   const [cancelDialogOpen, setCancelDialogOpen] = useState(false);
-  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const [selectedOrderId, setSelectedOrderId] = useState<number | null>(null);
   const [ratingDialogOpen, setRatingDialogOpen] = useState(false);
-  const [orderToRate, setOrderToRate] = useState<Order | null>(null);
+  const [orderToRate, setOrderToRate] = useState<Pedido | null>(null);
+  const [user, setUser] = useState<Usuario>();
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      router("/");
-      return;
-    }
-
     // Filtrar pedidos baseado no tipo de usuário
-    if (isClient) {
-      setOrders(mockOrders.filter((o) => o.clienteId === user?.id));
-    } else if (isTechnician) {
+    if (user?.papel === Papel.CLIENTE) {
+      PedidoService.encontrarPedidosCliente().then((data) => {
+        setOrders(data);
+      });
+    } else if (user?.papel === Papel.TECNICO) {
       // Técnicos veem seus pedidos e pedidos pendentes
-      setOrders(
-        mockOrders.filter(
-          (o) => o.tecnicoId === user?.id || o.status === "pendente"
-        )
-      );
-    }
-  }, [isAuthenticated, user, isClient, isTechnician, router]);
 
-  const handleCancelOrder = (orderId: string) => {
+      PedidoService.encontrarPedidosTecnico().then((data) => {
+        setOrders(data);
+      });
+    }
+  }, [user, router]);
+
+  const handleCancelOrder = (orderId: number) => {
     setSelectedOrderId(orderId);
     setCancelDialogOpen(true);
   };
@@ -97,9 +67,8 @@ export default function PedidosPage() {
         order.id === selectedOrderId
           ? {
               ...order,
-              status: "cancelado" as OrderStatus,
-              motivoCancelamento: motivo,
-              canceladoEm: new Date(),
+              estado: PedidoEstado.CANCELADO,
+              nota: motivo,
               updatedAt: new Date(),
             }
           : order
@@ -111,13 +80,13 @@ export default function PedidosPage() {
     });
   };
 
-  const handleCompleteOrder = (orderId: string) => {
+  const handleCompleteOrder = (orderId: number) => {
     setOrders((prevOrders) =>
       prevOrders.map((order) =>
         order.id === orderId
           ? {
               ...order,
-              status: "concluido" as OrderStatus,
+              estado: PedidoEstado.CONCLUIDO,
               concluidoEm: new Date(),
               updatedAt: new Date(),
             }
@@ -130,7 +99,7 @@ export default function PedidosPage() {
     });
   };
 
-  const handleAcceptOrder = (orderId: string) => {
+  const handleAcceptOrder = (orderId: number) => {
     const order = orders.find((o) => o.id === orderId);
 
     setOrders((prevOrders) =>
@@ -138,7 +107,7 @@ export default function PedidosPage() {
         order.id === orderId
           ? {
               ...order,
-              status: "em_andamento" as OrderStatus,
+              estado: PedidoEstado.EM_ANDAMENTO,
               tecnicoId: user?.id,
               updatedAt: new Date(),
             }
@@ -147,20 +116,18 @@ export default function PedidosPage() {
     );
 
     if (user && order) {
-      const welcomeMessage: ChatMessage = {
-        id: `MSG${Date.now()}`,
-        orderId: orderId,
-        senderId: user.id,
-        senderRole: user.role,
-        mensagem: `Olá! Sou ${user.nome}, ${
+      const welcomeMessage: MessageDTO = {
+        content: `Olá! Sou ${user.nome}, ${
           user.especialidade || "técnico"
         }. Aceitei seu pedido e estou pronto para atendê-lo. ${
           user.telefone
             ? `Você pode me contatar pelo telefone ${user.telefone}.`
             : ""
         } Vamos resolver seu problema!`,
-        createdAt: new Date(),
-        lida: false,
+        idPedido: order.id!,
+        idUsuario: user.id!,
+        sender: "user",
+        timestamp: new Date().toISOString(),
       };
 
       // Add to global chat store (accessing the same store from chat page)
@@ -177,7 +144,7 @@ export default function PedidosPage() {
     });
   };
 
-  const handleRateOrder = (orderId: string) => {
+  const handleRateOrder = (orderId: number) => {
     const order = orders.find((o) => o.id === orderId);
     if (order) {
       setOrderToRate(order);
@@ -194,7 +161,7 @@ export default function PedidosPage() {
         order.id === orderToRate.id
           ? {
               ...order,
-              status: "avaliado" as OrderStatus,
+              estado: PedidoEstado.AVALIADO,
               updatedAt: new Date(),
             }
           : order
@@ -208,13 +175,12 @@ export default function PedidosPage() {
     setOrderToRate(null);
   };
 
-  const filterOrdersByStatus = (statuses: OrderStatus[]) => {
-    return orders.filter((order) => statuses.includes(order.status));
+  const filterOrdersByStatus = (statuses: PedidoEstado[]) => {
+    return orders.filter((order) => statuses.includes(order.estado ?? PedidoEstado.PENDENTE));
   };
 
-  if (!isAuthenticated) {
-    return null;
-  }
+  const isClient = user?.papel === Papel.CLIENTE;
+  const isTechnician = user?.papel === Papel.TECNICO;
 
   return (
     <div className="min-h-screen bg-background">
@@ -235,13 +201,13 @@ export default function PedidosPage() {
           </TabsList>
 
           <TabsContent value="ativos" className="space-y-4">
-            {filterOrdersByStatus(["pendente", "aceito", "em_andamento"])
+            {filterOrdersByStatus([PedidoEstado.PENDENTE, PedidoEstado.ACEITO, PedidoEstado.EM_ANDAMENTO])
               .length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 Nenhum pedido ativo no momento.
               </p>
             ) : (
-              filterOrdersByStatus(["pendente", "aceito", "em_andamento"]).map(
+              filterOrdersByStatus([PedidoEstado.PENDENTE, PedidoEstado.ACEITO, PedidoEstado.EM_ANDAMENTO]).map(
                 (order) => (
                   <OrderCard
                     key={order.id}
@@ -255,12 +221,12 @@ export default function PedidosPage() {
           </TabsContent>
 
           <TabsContent value="concluidos" className="space-y-4">
-            {filterOrdersByStatus(["concluido", "avaliado"]).length === 0 ? (
+            {filterOrdersByStatus([PedidoEstado.CONCLUIDO, PedidoEstado.AVALIADO]).length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 Nenhum pedido concluído.
               </p>
             ) : (
-              filterOrdersByStatus(["concluido", "avaliado"]).map((order) => (
+              filterOrdersByStatus([PedidoEstado.CONCLUIDO, PedidoEstado.AVALIADO]).map((order) => (
                 <OrderCard
                   key={order.id}
                   order={order}
@@ -271,12 +237,12 @@ export default function PedidosPage() {
           </TabsContent>
 
           <TabsContent value="cancelados" className="space-y-4">
-            {filterOrdersByStatus(["cancelado"]).length === 0 ? (
+            {filterOrdersByStatus([PedidoEstado.CANCELADO]).length === 0 ? (
               <p className="text-center text-muted-foreground py-8">
                 Nenhum pedido cancelado.
               </p>
             ) : (
-              filterOrdersByStatus(["cancelado"]).map((order) => (
+              filterOrdersByStatus([PedidoEstado.CANCELADO]).map((order) => (
                 <OrderCard key={order.id} order={order} />
               ))
             )}
@@ -284,14 +250,17 @@ export default function PedidosPage() {
 
           {isTechnician && (
             <TabsContent value="disponiveis" className="space-y-4">
-              {orders.filter((o) => o.status === "pendente" && !o.tecnicoId)
-                .length === 0 ? (
+              {orders.filter(
+                (o) => o.estado === PedidoEstado.PENDENTE && !o.tecnico
+              ).length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
                   Nenhum pedido disponível no momento.
                 </p>
               ) : (
                 orders
-                  .filter((o) => o.status === "pendente" && !o.tecnicoId)
+                  .filter(
+                    (o) => o.estado === PedidoEstado.PENDENTE && !o.tecnico
+                  )
                   .map((order) => (
                     <OrderCard
                       key={order.id}
@@ -309,7 +278,7 @@ export default function PedidosPage() {
         open={cancelDialogOpen}
         onOpenChange={setCancelDialogOpen}
         onConfirm={confirmCancelOrder}
-        orderId={selectedOrderId || ""}
+        orderId={selectedOrderId || -1}
       />
 
       {orderToRate && (
@@ -318,7 +287,7 @@ export default function PedidosPage() {
           onOpenChange={setRatingDialogOpen}
           onSubmit={handleSubmitRating}
           technicianName={
-            getUserById(orderToRate.tecnicoId || "")?.nome || "Técnico"
+            orderToRate.tecnico ? orderToRate.tecnico.nome ?? "" : "Técnico"
           }
         />
       )}

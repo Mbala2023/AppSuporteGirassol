@@ -8,17 +8,16 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { useAuth } from "@/lib/auth-context"
 import { toast } from "sonner"
 import { Eye, EyeOff } from "lucide-react"
 import { ForgotPasswordDialog } from "./forgot-password-dialog"
+import { login } from "Frontend/auth"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
-  const { login } = useAuth()
   const router = useNavigate()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -26,13 +25,13 @@ export function LoginForm() {
     setIsLoading(true)
 
     try {
-      const success = await login(email, password)
+      const result = await login(email, password)
 
-      if (success) {
+      if (!result.error) {
         toast("Login realizado com sucesso!",{
           description: "Redirecionando...",
         })
-        router("/pedidos")
+        router("/dashboard")
       } else {
         toast( "Erro ao fazer login",{
           description: "Email ou senha incorretos."
@@ -56,11 +55,11 @@ export function LoginForm() {
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="username">Email</Label>
             <Input
-              id="email"
-              type="email"
-              placeholder="seu@email.com"
+              id="username"
+              type="text"
+              placeholder="username"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
