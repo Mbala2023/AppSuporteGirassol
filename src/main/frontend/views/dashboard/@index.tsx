@@ -28,7 +28,6 @@ import { RatingChart } from "@/components/rating-chart";
 import {
   getTechnicianStatsByPeriod,
   getRatingDataByPeriod,
-  Order,
   Rating,
 } from "@/lib/dashboard-utils";
 import {
@@ -41,116 +40,18 @@ import {
 import { AddUserDialog } from "@/components/add-user-dialog";
 import { UserManagementCard, User } from "@/components/user-management-card";
 import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
-import { get } from "node:http";
-import { getAuthenticatedUser } from "Frontend/auth";
 import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
-import { PedidoService } from "Frontend/generated/endpoints";
+import { PedidoService, UsuarioService } from "Frontend/generated/endpoints";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
-
-// Mock data for dashboard demo
-const mockOrders: Order[] = [
-  {
-    id: "1",
-    titulo: "Instalação de Software",
-    status: "pendente",
-    tecnicoId: 2,
-    createdAt: new Date(),
-  },
-  {
-    id: "2",
-    titulo: "Troca de Peça",
-    status: "em_andamento",
-    tecnicoId: 2,
-    createdAt: new Date(),
-  },
-  {
-    id: "3",
-    titulo: "Manutenção Preventiva",
-    status: "concluido",
-    tecnicoId: 5,
-    createdAt: new Date(),
-  },
-  {
-    id: "4",
-    titulo: "Configuração de Rede",
-    status: "avaliado",
-    tecnicoId: 5,
-    createdAt: new Date(),
-  },
-  {
-    id: "5",
-    titulo: "Atualização de Sistema",
-    status: "cancelado",
-    tecnicoId: 2,
-    createdAt: new Date(),
-  },
-];
-
-const mockUsers: User[] = [
-  {
-    id: 1,
-    nome: "Admin User",
-    email: "admin@email.com",
-    telefone: "(11) 90000-0001",
-    role: "admin",
-    especialidade: "Gestão",
-    avaliacaoMedia: 4.9,
-    totalAvaliacoes: 100,
-  },
-  {
-    id: 2,
-    nome: "Técnico João",
-    email: "joao.tecnico@email.com",
-    telefone: "(11) 90000-0002",
-    role: "tecnico",
-    especialidade: "Hardware",
-    avaliacaoMedia: 4.7,
-    totalAvaliacoes: 80,
-  },
-  {
-    id: 3,
-    nome: "Cliente Maria",
-    email: "maria.cliente@email.com",
-    telefone: "(11) 90000-0003",
-    role: "cliente",
-    avaliacaoMedia: undefined,
-    totalAvaliacoes: undefined,
-  },
-  {
-    id: 4,
-    nome: "Cliente José",
-    email: "jose.cliente@email.com",
-    telefone: "(11) 90000-0004",
-    role: "cliente",
-    avaliacaoMedia: undefined,
-    totalAvaliacoes: undefined,
-  },
-  {
-    id: 5,
-    nome: "Técnico Ana",
-    email: "ana.tecnico@email.com",
-    telefone: "(11) 90000-0005",
-    role: "tecnico",
-    especialidade: "Software",
-    avaliacaoMedia: 4.8,
-    totalAvaliacoes: 90,
-  },
-  {
-    id: 6,
-    nome: "Cliente Carla",
-    email: "carla.cliente@email.com",
-    telefone: "(11) 90000-0006",
-    role: "cliente",
-    avaliacaoMedia: undefined,
-    totalAvaliacoes: undefined,
-  },
-];
+import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
+import Usuario from "Frontend/generated/ao/appsuportegirassol/models/Usuario";
+import { useAuth } from "Frontend/auth";
 
 const mockRatings: Rating[] = [
-  { id: "1", estrelas: 5, tecnicoId: 2, createdAt: new Date("2026-01-10") },
-  { id: "2", estrelas: 4, tecnicoId: 5, createdAt: new Date("2026-01-11") },
-  { id: "3", estrelas: 3, tecnicoId: 2, createdAt: new Date("2026-01-12") },
-  { id: "4", estrelas: 5, tecnicoId: 5, createdAt: new Date("2026-01-13") },
+  { id: "1", estrelas: 5, tecnicoId: 2, dataHora: "2026-01-10" },
+  { id: "2", estrelas: 4, tecnicoId: 5, dataHora: "2026-01-11" },
+  { id: "3", estrelas: 3, tecnicoId: 2, dataHora: "2026-01-12" },
+  { id: "4", estrelas: 5, tecnicoId: 5, dataHora: "2026-01-13" },
 ];
 
 type TimePeriod = "diario" | "semanal" | "mensal" | "anual";
@@ -168,14 +69,25 @@ interface DashboardStats {
 
 export const config: ViewConfig = {
   loginRequired: true,
-  rolesAllowed: ["ROLE_USER"],
+  rolesAllowed: ["ROLE_USER", "ROLE_ADMIN"],
 };
 
 export default function DashboardPage() {
   const router = useNavigate();
-  const [stats, setStats] = useState<DashboardStats | null>(null);
+  const [stats, setStats] = useState<DashboardStats>({
+    totalPedidos: 0,
+    pedidosPendentes: 0,
+    pedidosEmAndamento: 0,
+    pedidosConcluidos: 0,
+    pedidosCancelados: 0,
+    totalClientes: 0,
+    totalTecnicos: 0,
+    avaliacaoMediaGeral: 0,
+  });
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("mensal");
-  const user = getAuthenticatedUser();
+  const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [pedidos, setPedidos] = useState<Pedido[]>([]);
+const { state: { user } } = useAuth();
 
   useEffect(() => {
     if (user?.authorities.includes("ROLE_ADMIN") === false) {
@@ -183,28 +95,39 @@ export default function DashboardPage() {
       return;
     }
 
-    PedidoService.encontrarPedidosCliente().then((data) => {
-      // Calcular estatísticas
-      const totalPedidos = data.length;
-      const pedidosPendentes = data.filter(
+    const fetchData = async () => {
+
+      const pedidos = await PedidoService.encontrarPedidosCliente();
+      const usuarios = await UsuarioService.listarUsuarios();
+
+      //Pedidos
+      const totalPedidos = pedidos.length;
+      const pedidosPendentes = pedidos.filter(
         (o) => o.estado === PedidoEstado.PENDENTE,
       ).length;
-      const pedidosEmAndamento = data.filter(
-        (o) => o.estado === PedidoEstado.EM_ANDAMENTO || o.estado === PedidoEstado.ACEITO,
+      const pedidosEmAndamento = pedidos.filter(
+        (o) =>
+          o.estado === PedidoEstado.EM_ANDAMENTO ||
+          o.estado === PedidoEstado.ACEITO,
       ).length;
-      const pedidosConcluidos = data.filter(
-        (o) => o.endereco === PedidoEstado.CONCLUIDO || o.estado === PedidoEstado.AVALIADO,
+      const pedidosConcluidos = pedidos.filter(
+        (o) =>
+          o.endereco === PedidoEstado.CONCLUIDO ||
+          o.estado === PedidoEstado.AVALIADO,
       ).length;
-      const pedidosCancelados = data.filter(
+      const pedidosCancelados = pedidos.filter(
         (o) => o.estado === PedidoEstado.CANCELADO,
       ).length;
-      const totalClientes = mockUsers.filter(
-        (u) => u.role === "cliente",
+
+      //Usuários
+      const totalClientes = usuarios.filter(
+        (u) => u.papel === Papel.CLIENTE,
       ).length;
-      const totalTecnicos = mockUsers.filter(
-        (u) => u.role === "tecnico" || u.role === "admin",
+      const totalTecnicos = usuarios.filter(
+        (u) => u.papel === Papel.TECNICO || u.papel === Papel.ADMIN,
       ).length;
 
+      //Avaliações
       const somaAvaliacoes = mockRatings.reduce(
         (acc, r) => acc + r.estrelas,
         0,
@@ -222,16 +145,17 @@ export default function DashboardPage() {
         totalTecnicos,
         avaliacaoMediaGeral,
       });
-    });
-  }, [router]);
 
-  if (!stats) {
-    return null;
-  }
+      setUsuarios(usuarios);
+      setPedidos(pedidos);
+    };
+
+    fetchData();
+  }, []);
 
   const taxaConclusao =
     stats.totalPedidos > 0
-      ? ((stats.pedidosConcluidos / stats.totalPedidos) * 100).toFixed(1)
+      ? ((stats?.pedidosConcluidos / stats.totalPedidos) * 100).toFixed(1)
       : "0";
 
   const taxaCancelamento =
@@ -240,8 +164,8 @@ export default function DashboardPage() {
       : "0";
 
   const technicianStats = getTechnicianStatsByPeriod(
-    mockUsers,
-    mockOrders,
+    usuarios,
+    pedidos,
     mockRatings,
     selectedPeriod,
   );
@@ -689,7 +613,7 @@ export default function DashboardPage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockOrders.map((order) => (
+                  {pedidos.map((order) => (
                     <div
                       key={order.id}
                       className="flex items-center justify-between p-4 border rounded-lg"
@@ -700,7 +624,7 @@ export default function DashboardPage() {
                           #{order.id}
                         </p>
                       </div>
-                      <Badge>{order.status}</Badge>
+                      <Badge>{order.estado}</Badge>
                     </div>
                   ))}
                 </div>
@@ -730,30 +654,30 @@ export default function DashboardPage() {
               </TabsList>
 
               <TabsContent value="all" className="space-y-4">
-                {mockUsers.map((user) => (
+                {usuarios.map((user) => (
                   <UserManagementCard key={user.id} user={user} />
                 ))}
               </TabsContent>
 
               <TabsContent value="admins" className="space-y-4">
-                {mockUsers
-                  .filter((u) => u.role === "admin")
+                {usuarios
+                  .filter((u) => u.papel === Papel.ADMIN)
                   .map((user) => (
                     <UserManagementCard key={user.id} user={user} />
                   ))}
               </TabsContent>
 
               <TabsContent value="technicians" className="space-y-4">
-                {mockUsers
-                  .filter((u) => u.role === "tecnico")
+                {usuarios
+                  .filter((u) => u.papel === Papel.TECNICO)
                   .map((user) => (
                     <UserManagementCard key={user.id} user={user} />
                   ))}
               </TabsContent>
 
               <TabsContent value="clients" className="space-y-4">
-                {mockUsers
-                  .filter((u) => u.role === "cliente")
+                {usuarios
+                  .filter((u) => u.papel === Papel.CLIENTE)
                   .map((user) => (
                     <UserManagementCard key={user.id} user={user} />
                   ))}

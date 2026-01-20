@@ -53,56 +53,58 @@ const mockUsers: User[] = [
   },
 ];
 import { toast } from "sonner"
+import Usuario from "Frontend/generated/ao/appsuportegirassol/models/Usuario"
+import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel"
 
 
 interface UserManagementCardProps {
-  user?: User
+  user?: Usuario
 }
 
 export function UserManagementCard({ user }: UserManagementCardProps) {
   // Use provided user or fallback to first mock user
-  const [currentUser, setCurrentUser] = useState(user || mockUsers[0])
+  const [currentUser, setCurrentUser] = useState(user)
 
   const handlePromoteToAdmin = () => {
-    const userIndex = mockUsers.findIndex((u) => u.id === currentUser.id)
+    const userIndex = mockUsers.findIndex((u) => u.id === currentUser?.id)
     if (userIndex !== -1) {
       mockUsers[userIndex].role = "admin"
-      setCurrentUser({ ...currentUser, role: "admin" })
+      setCurrentUser({ ...(currentUser!), papel: Papel.ADMIN })
       toast("Usuário promovido!", {
-        description: `${currentUser.nome} agora é um administrador.`,
+        description: `${currentUser?.nome} agora é um administrador.`,
       })
       window.location.reload()
     }
   }
 
   const handleDemoteFromAdmin = () => {
-    const userIndex = mockUsers.findIndex((u) => u.id === currentUser.id)
+    const userIndex = mockUsers.findIndex((u) => u.id === currentUser?.id)
     if (userIndex !== -1) {
       mockUsers[userIndex].role = "tecnico"
-      setCurrentUser({ ...currentUser, role: "tecnico" })
+      setCurrentUser({ ...(currentUser!), papel: Papel.TECNICO })
       toast("Permissões alteradas", {
-        description: `${currentUser.nome} agora é um técnico.`,
+        description: `${currentUser?.nome} agora é um técnico.`,
       })
       window.location.reload()
     }
   }
 
   const handleDeleteUser = () => {
-    const userIndex = mockUsers.findIndex((u) => u.id === currentUser.id)
+    const userIndex = mockUsers.findIndex((u) => u.id === currentUser?.id)
     if (userIndex !== -1) {
       mockUsers.splice(userIndex, 1)
       toast("Usuário removido", {
-        description: `${currentUser.nome} foi removido do sistema.`,
+        description: `${currentUser?.nome} foi removido do sistema.`,
       })
       window.location.reload()
     }
   }
 
-  const getRoleBadge = (role: string) => {
-    const variants = {
-      admin: "default",
-      tecnico: "secondary",
-      cliente: "outline",
+  const getRoleBadge = (role: Papel) => {
+    const variants: { [key in Papel]: string } = {
+      ADMIN: "default",
+      TECNICO: "secondary",
+      CLIENTE: "outline",
     }
     return <Badge variant={variants[role as keyof typeof variants] as any}>{role}</Badge>
   }
@@ -113,17 +115,17 @@ export function UserManagementCard({ user }: UserManagementCardProps) {
         <div className="flex items-start justify-between">
           <div className="space-y-2 flex-1">
             <div className="flex items-center gap-2">
-              <h3 className="font-semibold">{currentUser.nome}</h3>
-              {getRoleBadge(currentUser.role)}
+              <h3 className="font-semibold">{currentUser?.nome}</h3>
+              {getRoleBadge(currentUser?.papel ?? Papel.CLIENTE)}
             </div>
-            <p className="text-sm text-muted-foreground">{currentUser.email}</p>
-            <p className="text-sm text-muted-foreground">{currentUser.telefone}</p>
-            {currentUser.especialidade && (
+            <p className="text-sm text-muted-foreground">{currentUser?.email}</p>
+            <p className="text-sm text-muted-foreground">{currentUser?.telefone}</p>
+            {currentUser?.especialidade && (
               <p className="text-sm">
                 <span className="font-medium">Especialidade:</span> {currentUser.especialidade}
               </p>
             )}
-            {currentUser.avaliacaoMedia !== undefined && currentUser.avaliacaoMedia > 0 && (
+            {currentUser?.avaliacaoMedia !== undefined && currentUser?.avaliacaoMedia > 0 && (
               <div className="flex items-center gap-2">
                 <div className="flex items-center gap-1">
                   <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
@@ -135,7 +137,7 @@ export function UserManagementCard({ user }: UserManagementCardProps) {
           </div>
 
           <div className="flex flex-col gap-2">
-            {currentUser.role === "tecnico" && (
+            {currentUser?.papel === Papel.TECNICO && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="sm" variant="outline">
@@ -159,7 +161,7 @@ export function UserManagementCard({ user }: UserManagementCardProps) {
               </AlertDialog>
             )}
 
-            {currentUser.role === "admin" && (
+            {currentUser?.papel === Papel.ADMIN && (
               <AlertDialog>
                 <AlertDialogTrigger asChild>
                   <Button size="sm" variant="outline">
@@ -193,7 +195,7 @@ export function UserManagementCard({ user }: UserManagementCardProps) {
                 <AlertDialogHeader>
                   <AlertDialogTitle>Remover usuário?</AlertDialogTitle>
                   <AlertDialogDescription>
-                    Esta ação não pode ser desfeita. {currentUser.nome} será permanentemente removido do sistema.
+                    Esta ação não pode ser desfeita. {currentUser?.nome} será permanentemente removido do sistema.
                   </AlertDialogDescription>
                 </AlertDialogHeader>
                 <AlertDialogFooter>

@@ -1,5 +1,5 @@
 package ao.appsuportegirassol.models;
 
 public enum Papel {
-  ADMIN, CLIENTE, TECNICO
+  ADMIN, CLIENTE, TECNICO;
 }

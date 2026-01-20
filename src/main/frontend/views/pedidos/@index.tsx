@@ -87,8 +87,7 @@ export default function PedidosPage() {
           ? {
               ...order,
               estado: PedidoEstado.CONCLUIDO,
-              concluidoEm: new Date(),
-              updatedAt: new Date(),
+              concluidoEm: new Date().toISOString()
             }
           : order
       )

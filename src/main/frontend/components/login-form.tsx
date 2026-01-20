@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { toast } from "sonner"
 import { Eye, EyeOff } from "lucide-react"
 import { ForgotPasswordDialog } from "./forgot-password-dialog"
-import { login } from "Frontend/auth"
+import { useAuth } from "Frontend/auth"
 
 export function LoginForm() {
   const [email, setEmail] = useState("")
@@ -19,6 +19,7 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const router = useNavigate()
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()

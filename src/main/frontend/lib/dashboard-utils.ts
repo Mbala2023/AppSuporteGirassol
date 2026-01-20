@@ -1,70 +1,23 @@
+import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
+import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
+import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
+import Usuario from "Frontend/generated/ao/appsuportegirassol/models/Usuario";
 
 // Mock data for dashboard development
-export const mockUsers: User[] = [
-  { id: 1, nome: "João Silva", role: "tecnico", especialidade: "Elétrica", avatar: undefined },
-  { id: 2, nome: "Maria Souza", role: "admin", avatar: undefined },
-  { id: 3, nome: "Carlos Lima", role: "cliente", avatar: undefined },
-]
-
-export const mockOrders: Order[] = [
-  {
-    id: "ord-1",
-    titulo: "Troca de tomada",
-    status: "concluido",
-    inicioAtendimento: new Date(Date.now() - 1000 * 60 * 60 * 2),
-    concluidoEm: new Date(Date.now() - 1000 * 60 * 60),
-    tecnicoId: 1,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2)
-  },
-  {
-    id: "ord-2",
-    titulo: "Instalação de chuveiro",
-    status: "avaliado",
-    inicioAtendimento: new Date(Date.now() - 1000 * 60 * 60 * 5),
-    concluidoEm: new Date(Date.now() - 1000 * 60 * 60 * 4),
-    tecnicoId: 1,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5)
-  },
-  {
-    id: "ord-3",
-    titulo: "Reparo de luz",
-    status: "cancelado",
-    tecnicoId: 1,
-    createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24)
-  },
-]
 
 export const mockRatings: Rating[] = [
-  { id: "rat-1", tecnicoId: 1, estrelas: 5, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 2) },
-  { id: "rat-2", tecnicoId: 1, estrelas: 4, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 5) },
-  { id: "rat-3", tecnicoId: 1, estrelas: 5, createdAt: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3) },
+  { id: "rat-1", tecnicoId: 1, estrelas: 5, dataHora: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
+  { id: "rat-2", tecnicoId: 1, estrelas: 4, dataHora: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString() },
+  { id: "rat-3", tecnicoId: 1, estrelas: 5, dataHora: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString() },
 ]
 // ...existing code...
 
 // Types
-export interface User {
-  id: number;
-  nome: string;
-  role: "admin" | "tecnico" | "cliente";
-  especialidade?: string;
-  avatar?: string;
-}
-
-export interface Order {
-  id: string;
-  titulo: string;
-  status: "pendente" | "agendado" | "em_andamento" | "aceito" | "concluido" | "avaliado" | "cancelado";
-  inicioAtendimento?: Date;
-  concluidoEm?: Date;
-  tecnicoId?: number;
-  createdAt: Date;
-}
-
 export interface Rating {
   id: string;
   tecnicoId: number;
   estrelas: number;
-  createdAt: Date;
+  dataHora?: string;
 }
 
 export type TimePeriod = "diario" | "semanal" | "mensal" | "anual";
@@ -93,7 +46,7 @@ export interface PeriodRatingData {
 }
 
 // Função para filtrar dados por período
-export function filterByPeriod<T extends { createdAt: Date }>(data: T[], period: TimePeriod): T[] {
+export function filterByPeriod<T extends { dataHora?: string }>(data: T[], period: TimePeriod): T[] {
   const now = new Date()
   const startDate = new Date()
 
@@ -112,7 +65,7 @@ export function filterByPeriod<T extends { createdAt: Date }>(data: T[], period:
       break
   }
 
-  return data.filter((item) => item.createdAt >= startDate)
+  return data.filter((item) => new Date(item.dataHora ?? "") >= startDate)
 }
 
 // Função para calcular score do técnico
@@ -134,9 +87,9 @@ export function calculateTechnicianScore(
   return Number((pesoTaxaConclusao + pesoAvaliacao + pesoVolume).toFixed(1))
 }
 
-function calculateAverageAttendanceTime(orders: Order[]): number {
+function calculateAverageAttendanceTime(orders: Pedido[]): number {
   const completedOrders = orders.filter(
-    (o) => (o.status === "concluido" || o.status === "avaliado") && o.inicioAtendimento && o.concluidoEm,
+    (o) => (o.estado === PedidoEstado.CONCLUIDO || o.estado === PedidoEstado.AVALIADO) && o.inicioAtendimento && o.concluidoEm,
   )
 
   if (completedOrders.length === 0) return 0
@@ -153,25 +106,25 @@ function calculateAverageAttendanceTime(orders: Order[]): number {
 
 // Função para obter estatísticas de técnicos por período
 export function getTechnicianStatsByPeriod(
-  users: User[],
-  orders: Order[],
+  users: Usuario[],
+  orders: Pedido[],
   ratings: Rating[],
   period: TimePeriod,
 ): TechnicianStats[] {
-  const tecnicos = users.filter((u) => u.role === "tecnico" || u.role === "admin")
+  const tecnicos = users.filter((u) => u.papel === Papel.TECNICO || u.papel === Papel.ADMIN)
 
   const filteredOrders = filterByPeriod(orders, period)
   const filteredRatings = filterByPeriod(ratings, period)
 
   const stats: TechnicianStats[] = tecnicos.map((tecnico) => {
-    const tecnicoOrders = filteredOrders.filter((o) => o.tecnicoId === tecnico.id)
+    const tecnicoOrders = filteredOrders.filter((o) => o.tecnico?.id === tecnico.id)
     const tecnicoRatings = filteredRatings.filter((r) => r.tecnicoId === tecnico.id)
 
     const totalAtendimentos = tecnicoOrders.length
     const atendimentosConcluidos = tecnicoOrders.filter(
-      (o) => o.status === "concluido" || o.status === "avaliado",
+      (o) => o.estado === PedidoEstado.CONCLUIDO || o.estado === PedidoEstado.AVALIADO,
     ).length
-    const atendimentosCancelados = tecnicoOrders.filter((o) => o.status === "cancelado").length
+    const atendimentosCancelados = tecnicoOrders.filter((o) => o.estado === PedidoEstado.CANCELADO).length
 
     const somaAvaliacoes = tecnicoRatings.reduce((acc, r) => acc + r.estrelas, 0)
     const avaliacaoMedia = tecnicoRatings.length > 0 ? somaAvaliacoes / tecnicoRatings.length : 0
@@ -182,15 +135,17 @@ export function getTechnicianStatsByPeriod(
     const score = calculateTechnicianScore(totalAtendimentos, atendimentosConcluidos, avaliacaoMedia, totalAvaliacoes)
 
     const ordersComData = tecnicoOrders.filter((o) => o.concluidoEm)
-    const ultimoAtendimento = ordersComData.length > 0 ? ordersComData[ordersComData.length - 1].concluidoEm : undefined
+    const ultimoAtendimento = ordersComData.length > 0
+      ? new Date(ordersComData[ordersComData.length - 1].concluidoEm!)
+      : undefined
 
     const tempoMedioAtendimento = calculateAverageAttendanceTime(tecnicoOrders)
 
     return {
-      tecnicoId: tecnico.id,
-      nome: tecnico.nome,
+      tecnicoId: tecnico.id ?? 0,
+      nome: tecnico.nome ?? "Sem nome",
       especialidade: tecnico.especialidade || "Não especificado",
-      avatar: tecnico.avatar,
+      avatar: "Avatar",
       totalAtendimentos,
       atendimentosConcluidos,
       atendimentosCancelados,
@@ -216,7 +171,7 @@ export function getRatingDataByPeriod(ratings: Rating[], period: TimePeriod): Pe
     const hourlyData: { [key: string]: Rating[] } = {}
 
     filteredRatings.forEach((rating) => {
-      const hour = rating.createdAt.getHours()
+      const hour = new Date(rating.dataHora ?? "").getHours()
       const key = `${hour}:00`
       if (!hourlyData[key]) hourlyData[key] = []
       hourlyData[key].push(rating)
@@ -236,7 +191,7 @@ export function getRatingDataByPeriod(ratings: Rating[], period: TimePeriod): Pe
     const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
     filteredRatings.forEach((rating) => {
-      const dia = diasSemana[rating.createdAt.getDay()]
+      const dia = diasSemana[new Date(rating.dataHora ?? "").getDay()]
       if (!dailyData[dia]) dailyData[dia] = []
       dailyData[dia].push(rating)
     })
@@ -257,7 +212,7 @@ export function getRatingDataByPeriod(ratings: Rating[], period: TimePeriod): Pe
     const weeklyData: { [key: string]: Rating[] } = {}
 
     filteredRatings.forEach((rating) => {
-      const weekNumber = Math.ceil(rating.createdAt.getDate() / 7)
+      const weekNumber = Math.ceil(new Date(rating.dataHora ?? "").getDate() / 7)
       const key = `Semana ${weekNumber}`
       if (!weeklyData[key]) weeklyData[key] = []
       weeklyData[key].push(rating)
@@ -276,7 +231,7 @@ export function getRatingDataByPeriod(ratings: Rating[], period: TimePeriod): Pe
   const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
   filteredRatings.forEach((rating) => {
-    const mes = meses[rating.createdAt.getMonth()]
+    const mes = meses[new Date(rating.dataHora ?? "").getMonth()]
     if (!monthlyData[mes]) monthlyData[mes] = []
     monthlyData[mes].push(rating)
   })

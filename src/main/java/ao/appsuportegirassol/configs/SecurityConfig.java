@@ -8,7 +8,10 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+import org.springframework.security.provisioning.JdbcUserDetailsManager;
 import org.springframework.security.provisioning.UserDetailsManager;
 import org.springframework.security.web.SecurityFilterChain;
 
@@ -22,24 +25,20 @@ public class SecurityConfig {
     // denies all other
     http.authorizeHttpRequests(registry -> registry.requestMatchers(
         routeUtil::isRouteAllowed).permitAll());
+    http.authorizeHttpRequests(registry ->
+        registry
+            .requestMatchers("/", "/error").permitAll()
+            .requestMatchers("/chat/**", "/ws").authenticated()
+    );
     http.with(VaadinSecurityConfigurer.vaadin(), configurer -> {
       // use a custom login view and redirect to root on logout
-      configurer.loginView("/login", "/dashboard")
-          .anyRequest(AuthorizeHttpRequestsConfigurer.AuthorizedUrl::authenticated);
+      configurer.loginView("/login", "/dashboard");
     });
-    http.authorizeHttpRequests(registry ->
-        registry.requestMatchers("/").permitAll()
-    );
     return http.build();
   }
 
   @Bean
-  public UserDetailsManager userDetailsService() {
-    // Configure users and roles in memory
-    return new InMemoryUserDetailsManager(
-        // the {noop} prefix tells Spring that the password is not encoded
-        User.withUsername("user").password("{noop}user").roles("USER").build(),
-        User.withUsername("admin").password("{noop}admin").roles("ADMIN", "USER").build()
-    );
+  public PasswordEncoder passwordEncoder() {
+    return new BCryptPasswordEncoder();
   }
 }

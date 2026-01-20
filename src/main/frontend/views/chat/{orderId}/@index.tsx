@@ -25,20 +25,9 @@ import Chat from "@/generated/ao/appsuportegirassol/models/Chat";
 import Message from "@/generated/ao/appsuportegirassol/models/Message";
 import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
 import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
-import { getAuthenticatedUser } from "Frontend/auth";
+import { useAuth } from "Frontend/auth";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
-
-/*const chatMessagesStore: ChatMessage[] = [
-  {
-    id: "MSG001",
-    orderId: "ORD001",
-    senderId: "3",
-    senderRole: "cliente",
-    mensagem: "Olá, a que horas você pode vir?",
-    createdAt: new Date("2025-01-10T13:30:00"),
-    lida: true,
-  }
-]*/
+import { m } from "@vaadin/hilla-lit-form";
 
 export const config: ViewConfig = {
     loginRequired: true,
@@ -50,7 +39,7 @@ export default function ChatPage() {
   const params = useParams();
   const orderId = params.orderId as string;
   const [order, setOrder] = useState<Pedido>();
-  const user = getAuthenticatedUser();
+  const { state: { user } } = useAuth();
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [newMessage, setNewMessage] = useState("");
@@ -87,6 +76,7 @@ export default function ChatPage() {
 
   useEffect(() => {
     ChatService.getChat(Number(orderId)).then((chat: Chat | undefined) => {
+      console.log("Chat", chat)
       setMessages(chat?.messages ?? []);
     }).catch((error) => {
       console.error("Error fetching chat:", error);
@@ -106,6 +96,7 @@ export default function ChatPage() {
       .toUpperCase()
       .slice(0, 2);
   };
+
 
   useEffect(() => {
     const socket = new SockJS("http://localhost:8080/ws");

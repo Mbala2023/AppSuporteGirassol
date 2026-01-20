@@ -5,6 +5,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Entity
 @Table(name = "orders")
 @Getter
@@ -18,7 +20,9 @@ public class Pedido {
   private String descricao;
   private String nota;
   private String endereco;
-  private String dataHora;
+  private LocalDateTime dataHora;
+  private LocalDateTime inicioAtendimento;
+  private LocalDateTime concluidoEm;
   @ManyToOne(fetch = FetchType.LAZY)
   private Usuario tecnico;
   @ManyToOne(fetch = FetchType.LAZY)

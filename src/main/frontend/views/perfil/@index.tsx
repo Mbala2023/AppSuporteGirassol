@@ -28,7 +28,7 @@ import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { toast } from "sonner";
 import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
-import { getAuthenticatedUser } from "Frontend/auth";
+import { useAuth } from "Frontend/auth";
 import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
 import {
@@ -37,6 +37,7 @@ import {
 } from "Frontend/generated/PedidoService";
 import Usuario from "Frontend/generated/ao/appsuportegirassol/models/Usuario";
 import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
+import { UsuarioService } from "Frontend/generated/endpoints";
 
 // Mock ratings for demo
 const mockRatings: Rating[] = [
@@ -92,6 +93,12 @@ export default function PerfilPage() {
   const [user, setUser] = useState<Usuario>();
 
   useEffect(() => {
+    UsuarioService.logado().then((data) => {
+      setUser(data);
+    });
+  }, []);
+
+  useEffect(() => {
     if (user?.papel === Papel.TECNICO) {
       encontrarPedidosTecnico().then((data) => {
         setUserOrders(data);
@@ -105,6 +112,9 @@ export default function PerfilPage() {
       });
     }
   }, [user, router]);
+
+
+  if (!user) { return null; }
 
   const getInitials = (name: string) => {
     return name
@@ -192,7 +202,7 @@ export default function PerfilPage() {
                       <Calendar className="h-4 w-4" />
                       <span>
                         Membro desde{" "}
-                        {format(user?.email ?? "", "MMMM 'de' yyyy", {
+                        {format(user?.dataCadastro ?? "2025-01-01", "MMMM 'de' yyyy", {
                           locale: ptBR,
                         })}
                       </span>
@@ -242,7 +252,9 @@ export default function PerfilPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  {user?.papel === Papel.TECNICO ? "Atendimentos Totais" : "Pedidos Totais"}
+                  {user?.papel === Papel.TECNICO
+                    ? "Atendimentos Totais"
+                    : "Pedidos Totais"}
                 </CardTitle>
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -254,7 +266,9 @@ export default function PerfilPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  {user?.papel === Papel.TECNICO ? "Atendimentos Ativos" : "Pedidos Ativos"}
+                  {user?.papel === Papel.TECNICO
+                    ? "Atendimentos Ativos"
+                    : "Pedidos Ativos"}
                 </CardTitle>
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -266,7 +280,9 @@ export default function PerfilPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">
-                  {user?.papel === Papel.TECNICO ? "Atendimentos Concluídos" : "Pedidos Concluídos"}
+                  {user?.papel === Papel.TECNICO
+                    ? "Atendimentos Concluídos"
+                    : "Pedidos Concluídos"}
                 </CardTitle>
                 <Package className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -327,25 +343,31 @@ export default function PerfilPage() {
           <Card>
             <CardHeader>
               <CardTitle>
-                {user?.papel === Papel.TECNICO ? "Atendimentos Recentes" : "Pedidos Recentes"}
+                {user?.papel === Papel.TECNICO
+                  ? "Atendimentos Recentes"
+                  : "Pedidos Recentes"}
               </CardTitle>
               <CardDescription>
                 Últimos{" "}
-                {user?.papel === Papel.TECNICO ? "atendimentos realizados" : "pedidos feitos"}
+                {user?.papel === Papel.TECNICO
+                  ? "atendimentos realizados"
+                  : "pedidos feitos"}
               </CardDescription>
             </CardHeader>
             <CardContent>
               {userOrders.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">
-                  Nenhum {user?.papel === Papel.TECNICO ? "atendimento" : "pedido"} registrado
-                  ainda.
+                  Nenhum{" "}
+                  {user?.papel === Papel.TECNICO ? "atendimento" : "pedido"}{" "}
+                  registrado ainda.
                 </p>
               ) : (
                 <div className="space-y-4">
                   {userOrders.slice(0, 5).map((order) => {
-                    const otherUserId = user?.papel === Papel.TECNICO
-                      ? order.cliente?.id
-                      : order.tecnico?.id;
+                    const otherUserId =
+                      user?.papel === Papel.TECNICO
+                        ? order.cliente?.id
+                        : order.tecnico?.id;
                     const otherUser = otherUserId ? user?.nome : null;
 
                     return (
@@ -366,8 +388,10 @@ export default function PerfilPage() {
                           </p>
                           {otherUser && (
                             <p className="text-sm text-muted-foreground">
-                              {user?.papel === Papel.TECNICO ? "Cliente" : "Técnico"}:{" "}
-                              {otherUser}
+                              {user?.papel === Papel.TECNICO
+                                ? "Cliente"
+                                : "Técnico"}
+                              : {otherUser}
                             </p>
                           )}
                         </div>

@@ -13,13 +13,13 @@ import { LayoutDashboard, Package, User, LogOut, Menu } from "lucide-react"
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet"
 import { useState } from "react"
 import { SunflowerLogo } from "./sunflower-logo"
-import { getAuthenticatedUser, logout } from "Frontend/auth"
+import { useAuth } from "Frontend/auth"
 
 export function Navbar() {
   const pathname = window.location.pathname
   const router = useNavigate()
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
-  const user = getAuthenticatedUser()
+  const { state: { user }, logout } = useAuth();
   const isAdmin = user?.authorities.includes("ROLE_ADMIN")
   const isTecnico = user?.authorities.includes("ROLE_TECNICO")
 
