@@ -15,15 +15,15 @@ import java.util.List;
 @AllArgsConstructor
 @Entity
 public class Chat {
-
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id; // ID único da conversa
 
-  private Long userId; // ID do usuário que iniciou o chat
   private boolean isActive; // Se o chat está ativo ou finalizado
   @ManyToOne(fetch = FetchType.LAZY)
   private Usuario usuario; // ID do operador, se o chat foi transferido
+  @ManyToOne(fetch = FetchType.LAZY)
+  private Usuario cliente;
   @OneToOne(fetch = FetchType.LAZY)
   private Pedido pedido;
 

@@ -1,24 +1,10 @@
+import Avaliacao from "Frontend/generated/ao/appsuportegirassol/models/Avaliacao";
 import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
 import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
 import Usuario from "Frontend/generated/ao/appsuportegirassol/models/Usuario";
 
-// Mock data for dashboard development
-
-export const mockRatings: Rating[] = [
-  { id: "rat-1", tecnicoId: 1, estrelas: 5, dataHora: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString() },
-  { id: "rat-2", tecnicoId: 1, estrelas: 4, dataHora: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString() },
-  { id: "rat-3", tecnicoId: 1, estrelas: 5, dataHora: new Date(Date.now() - 1000 * 60 * 60 * 24 * 3).toISOString() },
-]
 // ...existing code...
-
-// Types
-export interface Rating {
-  id: string;
-  tecnicoId: number;
-  estrelas: number;
-  dataHora?: string;
-}
 
 export type TimePeriod = "diario" | "semanal" | "mensal" | "anual";
 
@@ -108,7 +94,7 @@ function calculateAverageAttendanceTime(orders: Pedido[]): number {
 export function getTechnicianStatsByPeriod(
   users: Usuario[],
   orders: Pedido[],
-  ratings: Rating[],
+  ratings: Avaliacao[],
   period: TimePeriod,
 ): TechnicianStats[] {
   const tecnicos = users.filter((u) => u.papel === Papel.TECNICO || u.papel === Papel.ADMIN)
@@ -118,7 +104,7 @@ export function getTechnicianStatsByPeriod(
 
   const stats: TechnicianStats[] = tecnicos.map((tecnico) => {
     const tecnicoOrders = filteredOrders.filter((o) => o.tecnico?.id === tecnico.id)
-    const tecnicoRatings = filteredRatings.filter((r) => r.tecnicoId === tecnico.id)
+    const tecnicoRatings = filteredRatings.filter((r) => r.tecnico?.id === tecnico.id)
 
     const totalAtendimentos = tecnicoOrders.length
     const atendimentosConcluidos = tecnicoOrders.filter(
@@ -163,12 +149,12 @@ export function getTechnicianStatsByPeriod(
 }
 
 // Função para obter dados de avaliação por período para gráficos
-export function getRatingDataByPeriod(ratings: Rating[], period: TimePeriod): PeriodRatingData[] {
+export function getRatingDataByPeriod(ratings: Avaliacao[], period: TimePeriod): PeriodRatingData[] {
   const filteredRatings = filterByPeriod(ratings, period)
 
   if (period === "diario") {
     // Agrupar por hora
-    const hourlyData: { [key: string]: Rating[] } = {}
+    const hourlyData: { [key: string]: Avaliacao[] } = {}
 
     filteredRatings.forEach((rating) => {
       const hour = new Date(rating.dataHora ?? "").getHours()
@@ -187,7 +173,7 @@ export function getRatingDataByPeriod(ratings: Rating[], period: TimePeriod): Pe
 
   if (period === "semanal") {
     // Agrupar por dia da semana
-    const dailyData: { [key: string]: Rating[] } = {}
+    const dailyData: { [key: string]: Avaliacao[] } = {}
     const diasSemana = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"]
 
     filteredRatings.forEach((rating) => {
@@ -209,7 +195,7 @@ export function getRatingDataByPeriod(ratings: Rating[], period: TimePeriod): Pe
 
   if (period === "mensal") {
     // Agrupar por semana
-    const weeklyData: { [key: string]: Rating[] } = {}
+    const weeklyData: { [key: string]: Avaliacao[] } = {}
 
     filteredRatings.forEach((rating) => {
       const weekNumber = Math.ceil(new Date(rating.dataHora ?? "").getDate() / 7)
@@ -227,7 +213,7 @@ export function getRatingDataByPeriod(ratings: Rating[], period: TimePeriod): Pe
   }
 
   // Anual - agrupar por mês
-  const monthlyData: { [key: string]: Rating[] } = {}
+  const monthlyData: { [key: string]: Avaliacao[] } = {}
   const meses = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun", "Jul", "Ago", "Set", "Out", "Nov", "Dez"]
 
   filteredRatings.forEach((rating) => {

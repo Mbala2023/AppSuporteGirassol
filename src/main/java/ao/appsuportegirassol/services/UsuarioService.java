@@ -22,7 +22,18 @@ public class UsuarioService {
 
   @RolesAllowed("ROLE_ADMIN")
   public @NonNull List<@NonNull Usuario> listarUsuarios() {
-    return usuarioRepositorio.findAll();
+    var lista = usuarioRepositorio.findAll();
+
+    System.out.println(lista);
+
+    return lista;
+  }
+
+  @RolesAllowed("ROLE_ADMIN")
+  public boolean criarUsuario(@NonNull Usuario usuario) {
+    var novoUsuario = usuarioRepositorio.save(usuario);
+
+    return novoUsuario.getId() != null;
   }
 
   @PermitAll

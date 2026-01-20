@@ -103,23 +103,6 @@ export function LoginForm() {
             {isLoading ? "Entrando..." : "Entrar"}
           </Button>
         </form>
-        <div className="mt-6 p-4 bg-muted/50 rounded-lg">
-          <p className="font-semibold text-sm mb-3">Contas de teste:</p>
-          <div className="space-y-2 text-xs sm:text-sm">
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-              <span className="font-medium">Admin:</span>
-              <span className="text-muted-foreground">joao@email.com / admin123</span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-              <span className="font-medium">Técnico:</span>
-              <span className="text-muted-foreground">maria@email.com / tecnico123</span>
-            </div>
-            <div className="flex flex-col sm:flex-row sm:items-center gap-1">
-              <span className="font-medium">Cliente:</span>
-              <span className="text-muted-foreground">pedro@email.com / cliente123</span>
-            </div>
-          </div>
-        </div>
       </CardContent>
     </Card>
   )

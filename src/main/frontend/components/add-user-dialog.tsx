@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
 import {
   Dialog,
   DialogContent,
@@ -12,76 +12,79 @@ import {
   DialogHeader,
   DialogTitle,
   DialogTrigger,
-} from "@/components/ui/dialog"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { UserPlus, Eye, EyeOff } from "lucide-react"
-import {toast} from "sonner"
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { UserPlus, Eye, EyeOff } from "lucide-react";
+import { toast } from "sonner";
+import { UsuarioService } from "Frontend/generated/endpoints";
+import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
 
-// Mock users for demo
-const mockUsers = [
-  { id: 1, nome: "Admin User", role: "admin", especialidade: "Gestão", email: "admin@example.com" },
-  { id: 2, nome: "Técnico João", role: "tecnico", especialidade: "Hardware", email: "joao@example.com" },
-  { id: 3, nome: "Cliente Maria", role: "cliente", email: "maria@example.com" },
-  { id: 4, nome: "Cliente José", role: "cliente", email: "jose@example.com" },
-  { id: 5, nome: "Técnico Ana", role: "tecnico", especialidade: "Software", email: "ana@example.com" },
-  { id: 6, nome: "Cliente Carla", role: "cliente", email: "carla@example.com" },
-]
-
-type UserRole = "cliente" | "tecnico" | "admin"
+type UserRole = "cliente" | "tecnico" | "admin";
 
 export function AddUserDialog() {
-  const [open, setOpen] = useState(false)
-  const [nome, setNome] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [telefone, setTelefone] = useState("")
-  const [role, setRole] = useState<UserRole>("cliente")
-  const [especialidade, setEspecialidade] = useState("")
-  const [descricao, setDescricao] = useState("")
+  const [open, setOpen] = useState(false);
+  const [nome, setNome] = useState("");
+  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [telefone, setTelefone] = useState("");
+  const [role, setRole] = useState<UserRole>("cliente");
+  const [especialidade, setEspecialidade] = useState("");
+  const [descricao, setDescricao] = useState("");
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-    // Validar se email já existe
-    const emailExists = mockUsers.some((u) => u.email === email)
-    if (emailExists) {
-      toast( "Erro", {
-        description: "Este email já está cadastrado no sistema."
-      })
-      return
-    }
-
-    // Criar novo usuário
-    const newUser = {
-      id: mockUsers.length + 1,
-      nome, 
+    const result = await UsuarioService.criarUsuario({
+      nome,
       email,
-      role,
+      senha: password,
+      telefone,
+      papel:
+        role === "cliente"
+          ? Papel.CLIENTE
+          : role === "tecnico"
+            ? Papel.TECNICO
+            : Papel.ADMIN,
+      especialidade: role !== "cliente" ? especialidade : undefined,
+      descricao: role !== "cliente" ? descricao : undefined,
+      avaliacaoMedia: 0,
+      totalAvaliacoes: 0,
+      username,
+    });
+
+    if (result) {
+      toast("Usuário criado com sucesso!", {
+        description: `${nome} foi adicionado como ${role}.`,
+      });
+
+      // Resetar formulário
+      setNome("");
+      setEmail("");
+      setPassword("");
+      setTelefone("");
+      setRole("cliente");
+      setEspecialidade("");
+      setDescricao("");
+      setUsername("");
+      setOpen(false);
+
+      // Recarregar página para atualizar lista
+      window.location.reload();
+    } else {
+      toast.error("Erro ao criar usuário. Tente novamente.");
     }
-
-    mockUsers.push(newUser)
-
-    toast( "Usuário criado com sucesso!", {
-      description: `${nome} foi adicionado como ${role}.`,
-    })
-
-    // Resetar formulário
-    setNome("")
-    setEmail("")
-    setPassword("")
-    setTelefone("")
-    setRole("cliente")
-    setEspecialidade("")
-    setDescricao("")
-    setOpen(false)
-
-    // Recarregar página para atualizar lista
-    window.location.reload()
-  }
+  };
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -94,7 +97,9 @@ export function AddUserDialog() {
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Adicionar Novo Usuário</DialogTitle>
-          <DialogDescription>Preencha os dados para criar um novo usuário no sistema.</DialogDescription>
+          <DialogDescription>
+            Preencha os dados para criar um novo usuário no sistema.
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit}>
           <div className="grid gap-4 py-4">
@@ -122,6 +127,18 @@ export function AddUserDialog() {
             </div>
 
             <div className="grid gap-2">
+              <Label htmlFor="username">Username *</Label>
+              <Input
+                id="username"
+                type="text"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="joao"
+                required
+              />
+            </div>
+
+            <div className="grid gap-2">
               <Label htmlFor="password">Senha *</Label>
               <div className="relative">
                 <Input
@@ -141,10 +158,16 @@ export function AddUserDialog() {
                   className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                   onClick={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  {showPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">Mínimo de 6 caracteres</p>
+              <p className="text-xs text-muted-foreground">
+                Mínimo de 6 caracteres
+              </p>
             </div>
 
             <div className="grid gap-2">
@@ -161,7 +184,10 @@ export function AddUserDialog() {
 
             <div className="grid gap-2">
               <Label htmlFor="role">Tipo de Usuário *</Label>
-              <Select value={role} onValueChange={(value) => setRole(value as UserRole)}>
+              <Select
+                value={role}
+                onValueChange={(value) => setRole(value as UserRole)}
+              >
                 <SelectTrigger id="role">
                   <SelectValue />
                 </SelectTrigger>
@@ -200,7 +226,11 @@ export function AddUserDialog() {
             )}
           </div>
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setOpen(false)}
+            >
               Cancelar
             </Button>
             <Button type="submit">Criar Usuário</Button>
@@ -208,5 +238,5 @@ export function AddUserDialog() {
         </form>
       </DialogContent>
     </Dialog>
-  )
+  );
 }

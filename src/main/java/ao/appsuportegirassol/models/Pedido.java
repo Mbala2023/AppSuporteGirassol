@@ -28,4 +28,9 @@ public class Pedido {
   @ManyToOne(fetch = FetchType.LAZY)
   private Usuario cliente;
   private PedidoEstado estado;
+
+  @PrePersist
+  public void prePersist() {
+    dataHora = LocalDateTime.now();
+  }
 }

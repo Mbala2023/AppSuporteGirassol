@@ -9,7 +9,3 @@ vaadin:
 
 ai:
   token: ${GEMINI_TOKEN:AIzaSyBdAGqv5yIfa5BMGXFeA8qIKW0GZLCo6mg}
-
-logging:
-  level:
-    org.springframework.security: trace

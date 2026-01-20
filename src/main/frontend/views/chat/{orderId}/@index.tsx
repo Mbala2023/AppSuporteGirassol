@@ -77,6 +77,11 @@ export default function ChatPage() {
   useEffect(() => {
     ChatService.getChat(Number(orderId)).then((chat: Chat | undefined) => {
       console.log("Chat", chat)
+      if (!chat) {
+        router("/pedidos");
+        return;
+      }
+      
       setMessages(chat?.messages ?? []);
     }).catch((error) => {
       console.error("Error fetching chat:", error);

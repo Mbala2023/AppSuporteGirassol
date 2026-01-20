@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR, te } from "date-fns/locale";
-import { Link } from "react-router";
+import { Link, useNavigate } from "react-router";
 import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
 import { useAuth } from "Frontend/auth";
@@ -82,6 +82,7 @@ export function OrderCard({
   const {
     state: { user },
   } = useAuth();
+  const router = useNavigate()
   const isClient = user?.authorities.includes("ROLE_CLIENTE");
   const isTechnician = user?.authorities.includes("ROLE_TECNICO");
 
@@ -113,7 +114,7 @@ export function OrderCard({
               {order.titulo}
             </CardTitle>
             <CardDescription className="text-xs sm:text-sm">
-              Pedido #{order.id}
+              Pedido #{order.id} <Button onClick={() => router(`/chat/${order.id}`)}>Chat</Button>
             </CardDescription>
           </div>
           <Badge variant={status.variant} className="self-start">

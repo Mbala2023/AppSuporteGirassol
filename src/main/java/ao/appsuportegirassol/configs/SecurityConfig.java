@@ -28,7 +28,7 @@ public class SecurityConfig {
     http.authorizeHttpRequests(registry ->
         registry
             .requestMatchers("/", "/error").permitAll()
-            .requestMatchers("/chat/**", "/ws").authenticated()
+            .requestMatchers("/chat/**", "/ws/**").authenticated()
     );
     http.with(VaadinSecurityConfigurer.vaadin(), configurer -> {
       // use a custom login view and redirect to root on logout

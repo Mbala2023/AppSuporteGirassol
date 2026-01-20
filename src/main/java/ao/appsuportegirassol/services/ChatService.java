@@ -3,22 +3,21 @@ package ao.appsuportegirassol.services;
 import ao.appsuportegirassol.dto.MessageDTO;
 import ao.appsuportegirassol.models.Chat;
 import ao.appsuportegirassol.models.Message;
-import ao.appsuportegirassol.repository.ChatRepository;
+import ao.appsuportegirassol.repository.ChatRepositorio;
 import ao.appsuportegirassol.repository.UsuarioRepositorio;
 import com.vaadin.hilla.BrowserCallable;
-import jakarta.annotation.security.PermitAll;
 import jakarta.annotation.security.RolesAllowed;
 import lombok.RequiredArgsConstructor;
 
 @BrowserCallable
 @RequiredArgsConstructor
 public class ChatService {
-  private final ChatRepository chatRepository;
+  private final ChatRepositorio chatRepositorio;
   private final UsuarioRepositorio usuarioRepositorio;
 
   @RolesAllowed("ROLE_USER")
   public Chat getChat(Long chatId) {
-    return chatRepository.findById(chatId).orElse(null);
+    return chatRepositorio.findById(chatId).orElse(null);
   }
 
   private void addMessage(Long chatId, Message message) {
@@ -30,7 +29,7 @@ public class ChatService {
     }
 
     chat.getMessages().add(message);
-    chatRepository.save(chat);
+    chatRepositorio.save(chat);
   }
 
   @RolesAllowed("ROLE_USER")

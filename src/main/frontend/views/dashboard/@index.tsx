@@ -28,7 +28,6 @@ import { RatingChart } from "@/components/rating-chart";
 import {
   getTechnicianStatsByPeriod,
   getRatingDataByPeriod,
-  Rating,
 } from "@/lib/dashboard-utils";
 import {
   Select,
@@ -41,18 +40,12 @@ import { AddUserDialog } from "@/components/add-user-dialog";
 import { UserManagementCard, User } from "@/components/user-management-card";
 import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
 import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
-import { PedidoService, UsuarioService } from "Frontend/generated/endpoints";
+import { AvaliacaoService, PedidoService, UsuarioService } from "Frontend/generated/endpoints";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
 import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
 import Usuario from "Frontend/generated/ao/appsuportegirassol/models/Usuario";
 import { useAuth } from "Frontend/auth";
-
-const mockRatings: Rating[] = [
-  { id: "1", estrelas: 5, tecnicoId: 2, dataHora: "2026-01-10" },
-  { id: "2", estrelas: 4, tecnicoId: 5, dataHora: "2026-01-11" },
-  { id: "3", estrelas: 3, tecnicoId: 2, dataHora: "2026-01-12" },
-  { id: "4", estrelas: 5, tecnicoId: 5, dataHora: "2026-01-13" },
-];
+import Avaliacao from "Frontend/generated/ao/appsuportegirassol/models/Avaliacao";
 
 type TimePeriod = "diario" | "semanal" | "mensal" | "anual";
 
@@ -87,7 +80,10 @@ export default function DashboardPage() {
   const [selectedPeriod, setSelectedPeriod] = useState<TimePeriod>("mensal");
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
-const { state: { user } } = useAuth();
+  const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const {
+    state: { user },
+  } = useAuth();
 
   useEffect(() => {
     if (user?.authorities.includes("ROLE_ADMIN") === false) {
@@ -96,9 +92,9 @@ const { state: { user } } = useAuth();
     }
 
     const fetchData = async () => {
-
       const pedidos = await PedidoService.encontrarPedidosCliente();
       const usuarios = await UsuarioService.listarUsuarios();
+      const avaliacoes = await AvaliacaoService.listarAvaliacoes();
 
       //Pedidos
       const totalPedidos = pedidos.length;
@@ -128,12 +124,12 @@ const { state: { user } } = useAuth();
       ).length;
 
       //Avaliações
-      const somaAvaliacoes = mockRatings.reduce(
+      const somaAvaliacoes = avaliacoes.reduce(
         (acc, r) => acc + r.estrelas,
         0,
       );
       const avaliacaoMediaGeral =
-        mockRatings.length > 0 ? somaAvaliacoes / mockRatings.length : 0;
+        avaliacoes.length > 0 ? somaAvaliacoes / avaliacoes.length : 0;
 
       setStats({
         totalPedidos,
@@ -153,6 +149,10 @@ const { state: { user } } = useAuth();
     fetchData();
   }, []);
 
+  if (!usuarios) {
+    return <div>Carregando...</div>;
+  }
+
   const taxaConclusao =
     stats.totalPedidos > 0
       ? ((stats?.pedidosConcluidos / stats.totalPedidos) * 100).toFixed(1)
@@ -166,10 +166,10 @@ const { state: { user } } = useAuth();
   const technicianStats = getTechnicianStatsByPeriod(
     usuarios,
     pedidos,
-    mockRatings,
+    avaliacoes,
     selectedPeriod,
   );
-  const ratingData = getRatingDataByPeriod(mockRatings, selectedPeriod);
+  const ratingData = getRatingDataByPeriod(avaliacoes, selectedPeriod);
 
   const getPeriodLabel = (period: TimePeriod) => {
     const labels = {
