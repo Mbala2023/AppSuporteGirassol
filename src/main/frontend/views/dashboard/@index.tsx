@@ -40,7 +40,11 @@ import { AddUserDialog } from "@/components/add-user-dialog";
 import { UserManagementCard, User } from "@/components/user-management-card";
 import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
 import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
-import { AvaliacaoService, PedidoService, UsuarioService } from "Frontend/generated/endpoints";
+import {
+  AvaliacaoService,
+  PedidoService,
+  UsuarioService,
+} from "Frontend/generated/endpoints";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
 import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
 import Usuario from "Frontend/generated/ao/appsuportegirassol/models/Usuario";
@@ -85,12 +89,13 @@ export default function DashboardPage() {
     state: { user },
   } = useAuth();
 
+  
   useEffect(() => {
     if (user?.authorities.includes("ROLE_ADMIN") === false) {
       router("/pedidos");
       return;
     }
-
+    
     const fetchData = async () => {
       const pedidos = await PedidoService.encontrarPedidosCliente();
       const usuarios = await UsuarioService.listarUsuarios();
@@ -104,17 +109,17 @@ export default function DashboardPage() {
       const pedidosEmAndamento = pedidos.filter(
         (o) =>
           o.estado === PedidoEstado.EM_ANDAMENTO ||
-          o.estado === PedidoEstado.ACEITO,
+        o.estado === PedidoEstado.ACEITO,
       ).length;
       const pedidosConcluidos = pedidos.filter(
         (o) =>
           o.endereco === PedidoEstado.CONCLUIDO ||
-          o.estado === PedidoEstado.AVALIADO,
+        o.estado === PedidoEstado.AVALIADO,
       ).length;
       const pedidosCancelados = pedidos.filter(
         (o) => o.estado === PedidoEstado.CANCELADO,
       ).length;
-
+      
       //Usuários
       const totalClientes = usuarios.filter(
         (u) => u.papel === Papel.CLIENTE,
@@ -122,15 +127,12 @@ export default function DashboardPage() {
       const totalTecnicos = usuarios.filter(
         (u) => u.papel === Papel.TECNICO || u.papel === Papel.ADMIN,
       ).length;
-
+      
       //Avaliações
-      const somaAvaliacoes = avaliacoes.reduce(
-        (acc, r) => acc + r.estrelas,
-        0,
-      );
+      const somaAvaliacoes = avaliacoes.reduce((acc, r) => acc + r.estrelas, 0);
       const avaliacaoMediaGeral =
-        avaliacoes.length > 0 ? somaAvaliacoes / avaliacoes.length : 0;
-
+      avaliacoes.length > 0 ? somaAvaliacoes / avaliacoes.length : 0;
+      
       setStats({
         totalPedidos,
         pedidosPendentes,
@@ -141,13 +143,14 @@ export default function DashboardPage() {
         totalTecnicos,
         avaliacaoMediaGeral,
       });
-
+      
       setUsuarios(usuarios);
       setPedidos(pedidos);
     };
-
+    
     fetchData();
   }, []);
+  
 
   if (!usuarios) {
     return <div>Carregando...</div>;

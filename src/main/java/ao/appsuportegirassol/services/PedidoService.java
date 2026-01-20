@@ -94,6 +94,7 @@ public class PedidoService {
     chat.setPedido(pedidoSalvo);
     chat.setCliente(usuario);
     chat.setActive(true);
+    chat.adicionarMensagem(pedido.mensagem());
 
     chatRepositorio.save(chat);
 

@@ -43,7 +43,15 @@ public class UsuarioService {
         .map(User::getUsername)
         .orElse(null);
 
+    if (username == null) {
+      return null;
+    }
+
     var usuario = usuarioRepositorio.findByUsername(username);
+
+    if (usuario == null) {
+      return null;
+    }
 
     usuario.setSenha(null);
     return usuario;

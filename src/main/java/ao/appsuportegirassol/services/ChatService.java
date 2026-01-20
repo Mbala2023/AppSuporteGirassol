@@ -1,8 +1,9 @@
 package ao.appsuportegirassol.services;
 
-import ao.appsuportegirassol.dto.MessageDTO;
+import ao.appsuportegirassol.dto.ChatDTO;
+import ao.appsuportegirassol.dto.MensagemDTO;
 import ao.appsuportegirassol.models.Chat;
-import ao.appsuportegirassol.models.Message;
+import ao.appsuportegirassol.models.Mensagem;
 import ao.appsuportegirassol.repository.ChatRepositorio;
 import ao.appsuportegirassol.repository.UsuarioRepositorio;
 import com.vaadin.hilla.BrowserCallable;
@@ -16,25 +17,25 @@ public class ChatService {
   private final UsuarioRepositorio usuarioRepositorio;
 
   @RolesAllowed("ROLE_USER")
-  public Chat getChat(Long chatId) {
-    return chatRepositorio.findById(chatId).orElse(null);
+  public ChatDTO getChat(Long chatId) {
+    return chatRepositorio.findById(chatId).map(ChatDTO::converter).orElse(null);
   }
 
-  private void addMessage(Long chatId, Message message) {
-    var chat = getChat(chatId);
-    message.setChat(chat);
+  private void addMessage(Long chatId, Mensagem mensagem) {
+    var chat = chatRepositorio.findById(chatId).orElse(null);
+    mensagem.setChat(chat);
 
     if (chat == null) {
       return;
     }
 
-    chat.getMessages().add(message);
+    chat.getMensagens().add(mensagem);
     chatRepositorio.save(chat);
   }
 
   @RolesAllowed("ROLE_USER")
-  public void addMessage(Long chatId, MessageDTO message) {
-    var m = new Message();
+  public void addMessage(Long chatId, MensagemDTO message) {
+    var m = new Mensagem();
     m.setUsuario(usuarioRepositorio.findById(message.idUsuario()).orElse(null));
 
     addMessage(chatId, m);

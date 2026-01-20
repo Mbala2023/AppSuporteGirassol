@@ -21,27 +21,29 @@ import { AttendanceTimer } from "@/components/attendance-timer";
 import SockJS from "sockjs-client";
 import { Client } from "@stomp/stompjs";
 import * as ChatService from "@/generated/ChatService";
-import Chat from "@/generated/ao/appsuportegirassol/models/Chat";
-import Message from "@/generated/ao/appsuportegirassol/models/Message";
 import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
 import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
 import { useAuth } from "Frontend/auth";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
-import { m } from "@vaadin/hilla-lit-form";
+import MensagemDTO from "Frontend/generated/ao/appsuportegirassol/dto/MensagemDTO";
+import PedidoDTO from "Frontend/generated/ao/appsuportegirassol/dto/PedidoDTO";
+import ChatDTO from "Frontend/generated/ao/appsuportegirassol/dto/ChatDTO";
 
 export const config: ViewConfig = {
-    loginRequired: true,
-    rolesAllowed: ['ROLE_USER'],
+  loginRequired: true,
+  rolesAllowed: ["ROLE_USER"],
 };
 
 export default function ChatPage() {
   const router = useNavigate();
   const params = useParams();
   const orderId = params.orderId as string;
-  const [order, setOrder] = useState<Pedido>();
-  const { state: { user } } = useAuth();
+  const [order, setOrder] = useState<PedidoDTO>();
+  const {
+    state: { user },
+  } = useAuth();
 
-  const [messages, setMessages] = useState<Message[]>([]);
+  const [messages, setMessages] = useState<MensagemDTO[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const stompClientRef = useRef<Client>(null);
@@ -49,49 +51,51 @@ export default function ChatPage() {
   const sendMessage = () => {
     const stompClient = stompClientRef.current;
     if (stompClient && stompClient.connected) {
-      console.log("Sending message:", name);
+      console.log("Sending mensagem:", name);
+      const body: MensagemDTO = {
+        sender: user?.nome ?? "Usuário",
+        conteudo: newMessage,
+        idPedido: orderId ? Number(orderId) : 0,
+      };
+
       stompClient.publish({
         destination: "/app/chat/" + orderId,
-        body: JSON.stringify({
-          sender: "user",
-          senderId: "",
-          content: newMessage,
-          timestamp: new Date().toISOString(),
-        }),
+        body: JSON.stringify(body),
       });
 
       setNewMessage("");
-      setMessages((prev) => [
-        ...prev,
-        {
-          sender: "user",
-          content: newMessage,
-          timestamp: new Date().toISOString(),
-        },
-      ]);
+      fetchChatMessages();
     } else {
       console.error("Stomp client is not connected");
     }
   };
 
+  const fetchChatMessages = () => {
+    ChatService.getChat(Number(orderId))
+      .then((chat: ChatDTO | undefined) => {
+        console.log("Chat", chat);
+        if (!chat) {
+          router("/pedidos");
+          return;
+        }
+
+        setOrder(chat.pedidoDTO);
+        setMessages(chat?.mensagens ?? []);
+      })
+      .catch((error) => {
+        console.error("Error fetching chat:", error);
+      });
+  };
+
   useEffect(() => {
-    ChatService.getChat(Number(orderId)).then((chat: Chat | undefined) => {
-      console.log("Chat", chat)
-      if (!chat) {
-        router("/pedidos");
-        return;
-      }
-      
-      setMessages(chat?.messages ?? []);
-    }).catch((error) => {
-      console.error("Error fetching chat:", error);
-    });
-  }, [orderId, router]);
+    fetchChatMessages();
+  }, []);
 
   useEffect(() => {
     // Scroll para a última mensagem
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
 
   const getInitials = (name: string) => {
     return name
@@ -102,19 +106,18 @@ export default function ChatPage() {
       .slice(0, 2);
   };
 
-
   useEffect(() => {
     const socket = new SockJS("http://localhost:8080/ws");
     const stompClient = new Client({
       webSocketFactory: () => socket,
       reconnectDelay: 5000,
       debug: (str) => {
-        console.log(str);
+        console.log("debug", str);
       },
       onConnect: () => {
         console.log("Connected to WebSocket");
         stompClient.subscribe("/topic/chat/" + orderId, (response) => {
-          console.log("Received message:", response.body);
+          console.log("Received mensagem:", response.body);
           setMessages((prev) => [...prev, JSON.parse(response.body)]);
         });
       },
@@ -131,13 +134,6 @@ export default function ChatPage() {
       stompClient.deactivate();
     };
   }, []);
-
-  const otherUser = {
-    username: order?.tecnico?.username === user?.username ? order?.cliente?.username : order?.tecnico?.username,
-    nome: "teste",
-    role: "teste",
-    especialidade: "teste",
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -168,29 +164,30 @@ export default function ChatPage() {
             </div>
           </CardHeader>
           <CardContent>
-            {otherUser && (
-              <div className="flex items-center gap-3">
-                <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
-                  <AvatarFallback className="text-xs sm:text-sm">
-                    {getInitials(otherUser.nome)}
-                  </AvatarFallback>
-                </Avatar>
-                <div>
-                  <p className="font-medium text-sm sm:text-base">
-                    {otherUser.nome}
-                  </p>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    {otherUser.role === "tecnico"
-                      ? otherUser.especialidade
-                      : "Cliente"}
-                  </p>
-                </div>
+            <div className="flex items-center gap-3">
+              <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
+                <AvatarFallback className="text-xs sm:text-sm">
+                  {getInitials(user?.nome ?? "?")}
+                </AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium text-sm sm:text-base">{user?.nome}</p>
+                <p className="text-xs sm:text-sm text-muted-foreground">
+                  {user?.authorities.includes("ROLE_TECNICO")
+                    ? user?.authorities.filter(
+                        (role) => role === "ROLE_TECNICO",
+                      ).length > 0
+                      ? "Técnico"
+                      : "Cliente"
+                    : "Cliente"}
+                </p>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
-        {(order?.estado === PedidoEstado.EM_ANDAMENTO || order?.estado === PedidoEstado.ACEITO) && (
+        {(order?.estado === PedidoEstado.EM_ANDAMENTO ||
+          order?.estado === PedidoEstado.ACEITO) && (
           <div className="mb-4">
             <AttendanceTimer
               startTime={new Date(order?.dataHora ?? "")}
@@ -210,13 +207,15 @@ export default function ChatPage() {
                   Nenhuma mensagem ainda. Inicie a conversa!
                 </p>
               ) : (
-                messages.map((message) => {
-                  const sender = message.sender;
-                  const isCurrentUser = (message.usuario?.username ?? "") === (user?.username ?? "");
+                messages.map((mensagem) => {
+                  const sender = mensagem.sender;
+                  const isCurrentUser =
+                    (mensagem.idUsuario ?? 0) ===
+                    (user?.id ?? -1);
 
                   return (
                     <div
-                      key={message.id}
+                      key={mensagem.id}
                       className={`flex gap-2 sm:gap-3 ${
                         isCurrentUser ? "flex-row-reverse" : "flex-row"
                       }`}
@@ -239,11 +238,11 @@ export default function ChatPage() {
                           }`}
                         >
                           <p className="text-xs sm:text-sm break-words">
-                            {message.conteudo}
+                            {mensagem.conteudo}
                           </p>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {format(message.timestamp ?? "", "HH:mm", {
+                          {format(mensagem.timestamp ?? "", "HH:mm", {
                             locale: ptBR,
                           })}
                         </span>

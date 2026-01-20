@@ -15,23 +15,12 @@ import * as PedidoService from "@/generated/PedidoService";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
 import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
 import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
-import Message from "Frontend/generated/ao/appsuportegirassol/models/Message";
-import MessageDTO from "Frontend/generated/ao/appsuportegirassol/dto/MessageDTO";
 import { useAuth } from "Frontend/auth";
 import { RatingDialog } from "Frontend/components/rating-dialog";
 import { UsuarioService } from "Frontend/generated/endpoints";
 import { set } from "date-fns";
 import CriarPedido from "Frontend/generated/ao/appsuportegirassol/dto/CriarPedido";
-
-interface ChatMessage {
-  id: string;
-  orderId: number;
-  senderId: number;
-  senderRole: string;
-  mensagem: string;
-  createdAt: Date;
-  lida: boolean;
-}
+import MensagemDTO from "Frontend/generated/ao/appsuportegirassol/dto/MensagemDTO";
 
 export const config: ViewConfig = {
   loginRequired: true,
@@ -148,8 +137,8 @@ export default function PedidosPage() {
     );
 
     if (user && order) {
-      const welcomeMessage: MessageDTO = {
-        content: `Olá! Sou ${user.nome}, ${
+      const welcomeMessage: MensagemDTO = {
+        conteudo: `Olá! Sou ${user.nome}, ${
           user.especialidade || "técnico"
         }. Aceitei seu pedido e estou pronto para atendê-lo. ${
           user.telefone

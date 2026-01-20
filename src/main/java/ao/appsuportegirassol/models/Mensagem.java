@@ -6,13 +6,15 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.time.LocalDateTime;
+
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Entity
-public class Message {
-
+@Table(name = "mensagens")
+public class Mensagem {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Long id;
@@ -24,5 +26,10 @@ public class Message {
   @ManyToOne(fetch = FetchType.LAZY)
   private Usuario usuario;
   private String conteudo;
-  private String timestamp; // Data e hora da mensagem
+  private LocalDateTime timestamp; // Data e hora da mensagem
+
+  @PrePersist
+  public void prePersist() {
+    timestamp = LocalDateTime.now();
+  }
 }

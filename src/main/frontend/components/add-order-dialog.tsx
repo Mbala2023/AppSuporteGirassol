@@ -30,17 +30,20 @@ export function AddOrderDialog({
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [endereco, setEndereco] = useState("");
+  const [mensagem, setMensagem] = useState("");
 
   const handleConfirm = () => {
     onConfirm({ 
       titulo, 
       descricao,
-      clienteId,
-      endereco
+      mensagem,
+      endereco,
+      clienteId
     });
     setTitulo("");
     setDescricao("");
     setEndereco("");
+    setMensagem("");
 
     onOpenChange(false);
   };
@@ -74,6 +77,17 @@ export function AddOrderDialog({
               id="endereco"
               value={endereco}
               onChange={(e) => setEndereco(e.target.value)}
+              className="col-span-3"
+            />
+          </div>
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="mensagem" className="text-right">
+              Mensagem
+            </Label>
+            <Textarea
+              id="mensagem"
+              value={mensagem}
+              onChange={(e) => setMensagem(e.target.value)}
               className="col-span-3"
             />
           </div>

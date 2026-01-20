@@ -1,11 +1,13 @@
 package ao.appsuportegirassol.services;
 
-import ao.appsuportegirassol.models.Message;
+import ao.appsuportegirassol.dto.MensagemDTO;
+import ao.appsuportegirassol.models.Mensagem;
 import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.chat.ChatModel;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.Date;
 
 @Service
@@ -17,7 +19,7 @@ public class AIAssistentService {
   }
 
 
-  public Message respondUser(Message message) {
+  public MensagemDTO respondUser(Mensagem mensagem) {
     
     var res = chatModel.chat(
         SystemMessage.from("""
@@ -25,17 +27,17 @@ public class AIAssistentService {
           
           Quando o assunto for algo fora do teu domínio deves passar a conversa para um humano(operador).
           """),
-        UserMessage.from(message.getConteudo())
+        UserMessage.from(mensagem.getConteudo())
     );
 
-    var out = new Message();
-
-    out.setChat(message.getChat());
-    out.setSender("bot");
-    out.setConteudo(res.aiMessage().text());
-    out.setTimestamp(new Date().toString());
-
-    return out;
+    return new MensagemDTO(
+        null,
+        "bot",
+        mensagem.getChat().getPedido().getId(),
+        null,
+        res.aiMessage().text(),
+        LocalDateTime.now()
+    );
   }
 
 }
