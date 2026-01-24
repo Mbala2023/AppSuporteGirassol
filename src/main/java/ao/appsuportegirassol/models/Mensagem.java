@@ -1,12 +1,12 @@
 package ao.appsuportegirassol.models;
 
 import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Setter
@@ -16,20 +16,22 @@ import java.time.LocalDateTime;
 @Table(name = "mensagens")
 public class Mensagem {
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "gn_msg")
   private Long id;
 
-  @OneToOne
+  @ManyToOne(fetch = FetchType.EAGER)
   @JoinColumn(name = "chat_id")
   private Chat chat;
-  private String sender; // Pode ser "user", "bot"
-  @ManyToOne(fetch = FetchType.LAZY)
+
+  @ManyToOne(fetch = FetchType.EAGER)
   private Usuario usuario;
+
+  @Lob
   private String conteudo;
-  private LocalDateTime timestamp; // Data e hora da mensagem
+  private LocalDateTime dataEnvio;
 
   @PrePersist
   public void prePersist() {
-    timestamp = LocalDateTime.now();
+    dataEnvio = LocalDateTime.now();
   }
 }

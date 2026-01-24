@@ -46,7 +46,7 @@ export default function PedidosPage() {
       const data = await PedidoService.encontrarPedidosTecnico();
       setOrders(data);
     }
-  }
+  };
 
   useEffect(() => {
     UsuarioService.logado().then((data) => {
@@ -55,11 +55,10 @@ export default function PedidosPage() {
   }, []);
 
   useEffect(() => {
-    fetchOrders()
+    fetchOrders();
   }, [user]);
 
   const handleCreateNewOrder = async (novoPedido: CriarPedido) => {
-
     const resultado = await PedidoService.criarPedido(novoPedido);
 
     if (resultado) {
@@ -145,10 +144,9 @@ export default function PedidosPage() {
             ? `Você pode me contatar pelo telefone ${user.telefone}.`
             : ""
         } Vamos resolver seu problema!`,
-        idPedido: order.id!,
-        idUsuario: user.id!,
-        sender: "user",
-        timestamp: new Date().toISOString(),
+        pedidoId: order.id!,
+        username: user.username!,
+        nomeDoUsuario: user.nome!,
       };
 
       // Add to global chat store (accessing the same store from chat page)

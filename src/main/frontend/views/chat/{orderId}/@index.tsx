@@ -16,18 +16,16 @@ import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { ArrowLeft, Send } from "lucide-react";
 import { format } from "date-fns";
-import { ptBR, se } from "date-fns/locale";
+import { ptBR } from "date-fns/locale";
 import { AttendanceTimer } from "@/components/attendance-timer";
-import SockJS from "sockjs-client";
-import { Client } from "@stomp/stompjs";
 import * as ChatService from "@/generated/ChatService";
 import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
-import Pedido from "Frontend/generated/ao/appsuportegirassol/models/Pedido";
 import { useAuth } from "Frontend/auth";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
 import MensagemDTO from "Frontend/generated/ao/appsuportegirassol/dto/MensagemDTO";
 import PedidoDTO from "Frontend/generated/ao/appsuportegirassol/dto/PedidoDTO";
 import ChatDTO from "Frontend/generated/ao/appsuportegirassol/dto/ChatDTO";
+import { useSignal } from "@vaadin/hilla-react-signals";
 
 export const config: ViewConfig = {
   loginRequired: true,
@@ -35,7 +33,7 @@ export const config: ViewConfig = {
 };
 
 export default function ChatPage() {
-  const router = useNavigate();
+  const navigate = useNavigate();
   const params = useParams();
   const orderId = params.orderId as string;
   const [order, setOrder] = useState<PedidoDTO>();
@@ -43,44 +41,35 @@ export default function ChatPage() {
     state: { user },
   } = useAuth();
 
-  const [messages, setMessages] = useState<MensagemDTO[]>([]);
+  const messages = useSignal<MensagemDTO[]>([]);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const stompClientRef = useRef<Client>(null);
 
-  const sendMessage = () => {
-    const stompClient = stompClientRef.current;
-    if (stompClient && stompClient.connected) {
-      console.log("Sending mensagem:", name);
-      const body: MensagemDTO = {
-        sender: user?.nome ?? "Usuário",
+  const sendMessage = async () => {
+    try {
+      await ChatService.processIncomingMessage(Number(orderId), {
         conteudo: newMessage,
-        idPedido: orderId ? Number(orderId) : 0,
-      };
-
-      stompClient.publish({
-        destination: "/app/chat/" + orderId,
-        body: JSON.stringify(body),
+        chatId: Number(orderId),
+        pedidoId: Number(orderId),
+        username: user?.username ?? "",
+        nomeDoUsuario: user?.nome ?? "",
       });
 
       setNewMessage("");
-      fetchChatMessages();
-    } else {
-      console.error("Stomp client is not connected");
+    } catch (error) {
+      console.error("Error sending message:", error);
     }
   };
 
   const fetchChatMessages = () => {
     ChatService.getChat(Number(orderId))
       .then((chat: ChatDTO | undefined) => {
-        console.log("Chat", chat);
         if (!chat) {
-          router("/pedidos");
+          navigate("/pedidos");
           return;
         }
 
         setOrder(chat.pedidoDTO);
-        setMessages(chat?.mensagens ?? []);
       })
       .catch((error) => {
         console.error("Error fetching chat:", error);
@@ -88,14 +77,22 @@ export default function ChatPage() {
   };
 
   useEffect(() => {
-    fetchChatMessages();
+    const sub = ChatService.getMensagens(Number(orderId))
+      .onNext((mensagem) => {
+        messages.value = [...messages.value, mensagem];
+      })
+      .onSubscriptionLost(() => {
+        fetchChatMessages();
+      });
+
+    return () => {
+      sub.cancel();
+    };
   }, []);
 
   useEffect(() => {
-    // Scroll para a última mensagem
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
-
+  }, [messages.value]);
 
   const getInitials = (name: string) => {
     return name
@@ -105,35 +102,6 @@ export default function ChatPage() {
       .toUpperCase()
       .slice(0, 2);
   };
-
-  useEffect(() => {
-    const socket = new SockJS("http://localhost:8080/ws");
-    const stompClient = new Client({
-      webSocketFactory: () => socket,
-      reconnectDelay: 5000,
-      debug: (str) => {
-        console.log("debug", str);
-      },
-      onConnect: () => {
-        console.log("Connected to WebSocket");
-        stompClient.subscribe("/topic/chat/" + orderId, (response) => {
-          console.log("Received mensagem:", response.body);
-          setMessages((prev) => [...prev, JSON.parse(response.body)]);
-        });
-      },
-      onStompError: (frame) => {
-        console.error("Broker reported error: " + frame.headers["message"]);
-        console.error("Additional details: " + frame.body);
-      },
-    });
-
-    stompClient.activate();
-    stompClientRef.current = stompClient;
-
-    return () => {
-      stompClient.deactivate();
-    };
-  }, []);
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,11 +142,7 @@ export default function ChatPage() {
                 <p className="font-medium text-sm sm:text-base">{user?.nome}</p>
                 <p className="text-xs sm:text-sm text-muted-foreground">
                   {user?.authorities.includes("ROLE_TECNICO")
-                    ? user?.authorities.filter(
-                        (role) => role === "ROLE_TECNICO",
-                      ).length > 0
-                      ? "Técnico"
-                      : "Cliente"
+                    ? "Técnico"
                     : "Cliente"}
                 </p>
               </div>
@@ -202,16 +166,13 @@ export default function ChatPage() {
           </CardHeader>
           <CardContent className="flex-1 flex flex-col p-3 sm:p-6">
             <div className="flex-1 overflow-y-auto space-y-3 sm:space-y-4 mb-3 sm:mb-4">
-              {messages.length === 0 ? (
+              {messages.value.length === 0 ? (
                 <p className="text-center text-muted-foreground text-xs sm:text-sm py-8">
                   Nenhuma mensagem ainda. Inicie a conversa!
                 </p>
               ) : (
-                messages.map((mensagem) => {
-                  const sender = mensagem.sender;
-                  const isCurrentUser =
-                    (mensagem.idUsuario ?? 0) ===
-                    (user?.id ?? -1);
+                messages.value.map((mensagem) => {
+                  const isCurrentUser = mensagem.username === user?.username;
 
                   return (
                     <div
@@ -222,7 +183,9 @@ export default function ChatPage() {
                     >
                       <Avatar className="h-7 w-7 sm:h-8 sm:w-8 flex-shrink-0">
                         <AvatarFallback className="text-xs">
-                          {sender ? getInitials(sender) : "?"}
+                          {mensagem.nomeDoUsuario
+                            ? getInitials(mensagem.nomeDoUsuario)
+                            : "?"}
                         </AvatarFallback>
                       </Avatar>
                       <div
@@ -242,9 +205,13 @@ export default function ChatPage() {
                           </p>
                         </div>
                         <span className="text-xs text-muted-foreground">
-                          {format(mensagem.timestamp ?? "", "HH:mm", {
-                            locale: ptBR,
-                          })}
+                          {format(
+                            new Date(mensagem?.dataEnvio ?? ""),
+                            "HH:mm",
+                            {
+                              locale: ptBR,
+                            },
+                          )}
                         </span>
                       </div>
                     </div>

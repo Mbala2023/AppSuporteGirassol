@@ -8,8 +8,11 @@ vaadin:
   launch-browser: true
 
 ai:
-  token: ${GEMINI_TOKEN:AIzaSyBdAGqv5yIfa5BMGXFeA8qIKW0GZLCo6mg}
+  token: ${GEMINI_TOKEN:AIzaSyD9D3Q_ywyrvvkXO9uMAzrHD4QSha5a73s}
 
 logging:
   level:
     org.springframework.messaging: debug
+    org.springframework.web.socket: debug
+    org.springframework.messaging.simp: debug
+    ao.appsuportegirassol: debug

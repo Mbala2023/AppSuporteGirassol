@@ -21,14 +21,14 @@ public class Chat {
   private Long id; // ID único da conversa
 
   private boolean isActive; // Se o chat está ativo ou finalizado
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.EAGER)
   private Usuario tecnico; // ID do operador, se o chat foi transferido
-  @ManyToOne(fetch = FetchType.LAZY)
+  @ManyToOne(fetch = FetchType.EAGER)
   private Usuario cliente;
-  @OneToOne(fetch = FetchType.LAZY)
+  @OneToOne(fetch = FetchType.EAGER)
   private Pedido pedido;
 
-  @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL)
+  @OneToMany(mappedBy = "chat", cascade = CascadeType.ALL, fetch = FetchType.EAGER)
   private List<@NonNull Mensagem> mensagens = new ArrayList<>(); // Relacionamento com as mensagens
 
   public void adicionarMensagem(String mensagem) {
@@ -40,9 +40,7 @@ public class Chat {
     mensagemInicial.setChat(this);
     mensagemInicial.setUsuario(cliente);
     mensagemInicial.setConteudo(mensagem);
-    mensagemInicial.setSender("user");
 
     mensagens.add(mensagemInicial);
   }
 }
-

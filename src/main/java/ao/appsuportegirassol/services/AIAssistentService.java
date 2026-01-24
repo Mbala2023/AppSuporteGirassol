@@ -1,43 +1,37 @@
 package ao.appsuportegirassol.services;
 
+import ao.appsuportegirassol.configs.Assistant;
 import ao.appsuportegirassol.dto.MensagemDTO;
 import ao.appsuportegirassol.models.Mensagem;
-import dev.langchain4j.data.message.SystemMessage;
-import dev.langchain4j.data.message.UserMessage;
-import dev.langchain4j.model.chat.ChatModel;
+import dev.langchain4j.model.chat.ChatModel; // Still needed for ChatModel bean, but not directly used here
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Date;
 
 @Service
+@RequiredArgsConstructor
 public class AIAssistentService {
-  private final ChatModel chatModel;
-
-  public AIAssistentService(ChatModel chatModel) {
-    this.chatModel = chatModel;
-  }
-
+  private final Assistant assistant;
 
   public MensagemDTO respondUser(Mensagem mensagem) {
-    
-    var res = chatModel.chat(
-        SystemMessage.from("""
-          Tu és um assistente de IA, da Suporte Girassol, um sistema de atendimento ao cliente.
-          
-          Quando o assunto for algo fora do teu domínio deves passar a conversa para um humano(operador).
-          """),
-        UserMessage.from(mensagem.getConteudo())
-    );
+    Long orderId = mensagem.getChat().getPedido().getId();
+    ToolContextProvider.setOrderId(orderId); // Set the orderId in ThreadLocal
 
-    return new MensagemDTO(
-        null,
-        "bot",
-        mensagem.getChat().getPedido().getId(),
-        null,
-        res.aiMessage().text(),
-        LocalDateTime.now()
-    );
+    try {
+      String aiResponseText = assistant.chat(mensagem.getConteudo());
+
+      return new MensagemDTO(
+          null,
+          "bot",
+          mensagem.getChat().getPedido().getId(),
+          null,
+          aiResponseText,
+          "Assistente",
+          LocalDateTime.now()
+      );
+    } finally {
+      ToolContextProvider.clear(); // Clear the orderId after processing
+    }
   }
-
 }

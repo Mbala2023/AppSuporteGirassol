@@ -52,5 +52,17 @@ public class InicialiacaoUsuario implements CommandLineRunner {
       usuario.setPapel(Papel.CLIENTE);
       usuarioRepositorio.save(usuario);
     }
+
+    if (!usuarioRepositorio.existsByUsername("bot")) {
+      var usuario = new Usuario();
+      usuario.setUsername("bot");
+      usuario.setSenha(passwordEncoder.encode("bot")); // Bot password (can be random)
+      usuario.setNome("Bot Assistant");
+      usuario.setEmail("bot@appgirassol.com");
+      usuario.setTelefone("");
+      usuario.setDescricao("Assistente de IA");
+      usuario.setPapel(Papel.ADMIN); // Or a new Papel.BOT
+      usuarioRepositorio.save(usuario);
+    }
   }
 }
