@@ -19,7 +19,7 @@ public class AIAssistentService {
     ToolContextProvider.setOrderId(orderId); // Set the orderId in ThreadLocal
 
     try {
-      String aiResponseText = assistant.chat(mensagem.getConteudo());
+      String aiResponseText = assistant.chat(mensagem.getChat().getPedido().getDescricao(), mensagem.getConteudo());
 
       return new MensagemDTO(
           null,

@@ -26,6 +26,7 @@ import MensagemDTO from "Frontend/generated/ao/appsuportegirassol/dto/MensagemDT
 import PedidoDTO from "Frontend/generated/ao/appsuportegirassol/dto/PedidoDTO";
 import ChatDTO from "Frontend/generated/ao/appsuportegirassol/dto/ChatDTO";
 import { useSignal } from "@vaadin/hilla-react-signals";
+import { ActionOnLostSubscription } from "@vaadin/hilla-frontend";
 
 export const config: ViewConfig = {
   loginRequired: true,
@@ -47,7 +48,7 @@ export default function ChatPage() {
 
   const sendMessage = async () => {
     try {
-      await ChatService.processIncomingMessage(Number(orderId), {
+      await ChatService.enviarMensagem(Number(orderId), {
         conteudo: newMessage,
         chatId: Number(orderId),
         pedidoId: Number(orderId),
@@ -70,25 +71,39 @@ export default function ChatPage() {
         }
 
         setOrder(chat.pedidoDTO);
+        messages.value = chat.mensagens ?? [];
       })
       .catch((error) => {
         console.error("Error fetching chat:", error);
       });
   };
 
-  useEffect(() => {
-    const sub = ChatService.getMensagens(Number(orderId))
-      .onNext((mensagem) => {
-        messages.value = [...messages.value, mensagem];
-      })
-      .onSubscriptionLost(() => {
-        fetchChatMessages();
-      });
+useEffect(() => {
+  // Busca mensagens existentes antes de abrir o streaming
+  fetchChatMessages();
 
-    return () => {
-      sub.cancel();
-    };
-  }, []);
+  // Subscribe à stream reativa
+  const subscription = ChatService.observeChat(Number(orderId))
+    .onNext((mensagem) => {
+      // Aqui a mensagem já está no formato enviado pelo backend
+      // Atualize o estado adicionando ao array
+      messages.value = [...messages.value, mensagem];
+    })
+    .onError((err) => {
+      console.error("Erro no chat SSE:", err);
+    })
+    .onSubscriptionLost(() => {
+      // Tenta resubscrever quando a conexão SSE cair
+      fetchChatMessages();
+      return ActionOnLostSubscription.RESUBSCRIBE;
+    });
+
+  return () => {
+    // Cancela a assinatura quando o componente desmontar
+    subscription.cancel();
+  };
+}, []);
+
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });

@@ -2,62 +2,65 @@ package ao.appsuportegirassol.services;
 
 import ao.appsuportegirassol.dto.ChatDTO;
 import ao.appsuportegirassol.dto.MensagemDTO;
-import ao.appsuportegirassol.models.Chat;
 import ao.appsuportegirassol.models.Papel;
 import ao.appsuportegirassol.repository.ChatRepositorio;
 import ao.appsuportegirassol.repository.UsuarioRepositorio;
 import com.vaadin.hilla.BrowserCallable;
 import jakarta.annotation.security.RolesAllowed;
+
 import java.time.LocalDateTime;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
 import org.springframework.http.codec.ServerSentEvent;
-import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import reactor.core.publisher.Flux;
-import reactor.core.publisher.FluxSink;
 import reactor.core.publisher.Sinks;
+import reactor.core.publisher.Sinks.Many;
 
 @RequiredArgsConstructor
 @BrowserCallable
-@Service
 public class ChatService {
   private final ChatRepositorio chatRepositorio;
   private final UsuarioRepositorio usuarioRepositorio;
   private final AIAssistentService aiAssistentService;
   private final UsuarioService usuarioService;
-  private final Map<Long, FluxSink<ServerSentEvent<MensagemDTO>>> chatSinks =
-      new ConcurrentHashMap<>();
+  private final Map<Long, Many<MensagemDTO>> chatSinks = new ConcurrentHashMap<>();
 
   @RolesAllowed("ROLE_USER")
-  public ChatDTO getChat(Long chatId) {
-    return chatRepositorio.findById(chatId).map(ChatDTO::converter).orElse(null);
-  }
+  public ChatDTO getChat(@NonNull Long chatId) {
+    var usuario = usuarioService.logado();
 
-  public Flux<ServerSentEvent<MensagemDTO>> getMessagesStream(Long chatId) {
-    return Flux.create(sink -> {
-      chatSinks.put(chatId, sink);
-      sink.onDispose(() -> chatSinks.remove(chatId));
-    });
+    if (isUserInChat(usuario.getUsername(), chatId)) {
+      return chatRepositorio.findById(chatId).map(ChatDTO::converter).orElse(null);
+    }
+
+    return null;
   }
 
   @RolesAllowed("ROLE_USER")
-  public @NonNull Flux<@NonNull MensagemDTO> getMensagens(Long chatId) {
-    return chatRepositorio.findById(chatId)
-        .map(Chat::getMensagens)
-        .map(Flux::fromIterable)
-        .orElse(Flux.empty())
-        .map(MensagemDTO::converte);
+  public Flux<@NonNull MensagemDTO> observeChat(@NonNull Long chatId) {
+    // Cria o sink se não existir
+    var sink = chatSinks.computeIfAbsent(chatId, id ->
+        Sinks.many().multicast().onBackpressureBuffer()
+    );
+
+    return sink
+        .asFlux()
+        .doOnCancel(() -> {
+          if (sink.currentSubscriberCount() <= 0) {
+            chatSinks.remove(chatId);
+          }
+        });
   }
 
   @Transactional
   @RolesAllowed("ROLE_USER")
-  public void processIncomingMessage(Long chatId, MensagemDTO messageDTO) {
+  public void enviarMensagem(@NonNull Long chatId, @NonNull MensagemDTO mensagem) {
     var chatModel = chatRepositorio.findById(chatId).orElse(null);
     if (chatModel == null) {
-      // Create a system error message and push it to the sink
       var errorMessage = new MensagemDTO(null,
           "system",
           chatId,
@@ -74,7 +77,7 @@ public class ChatService {
       chatModel.setTecnico(usuario);
     }
 
-    var messageModel = messageDTO.toModel();
+    var messageModel = mensagem.toModel();
     messageModel.setChat(chatModel);
     messageModel.setUsuario(usuario); // Set the logged-in user as the sender
 
@@ -103,10 +106,11 @@ public class ChatService {
   }
 
   @RolesAllowed("ROLE_USER")
-  private void pushMessageToSink(Long chatId, MensagemDTO message) {
-    FluxSink<ServerSentEvent<MensagemDTO>> sink = chatSinks.get(chatId);
+  private void pushMessageToSink(@NonNull Long chatId, @NonNull MensagemDTO message) {
+    var sink = chatSinks.get(chatId);
+
     if (sink != null) {
-      sink.next(ServerSentEvent.builder(message).build());
+      sink.tryEmitNext(message);
     }
   }
 
@@ -118,6 +122,10 @@ public class ChatService {
     var chat = chatRepositorio.findById(chatId).orElse(null);
     if (chat == null) {
       return false;
+    }
+
+    if (user.getPapel() == Papel.TECNICO) {
+      return true;
     }
 
     boolean isCliente =
