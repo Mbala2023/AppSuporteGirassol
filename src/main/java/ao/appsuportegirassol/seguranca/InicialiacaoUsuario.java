@@ -36,7 +36,21 @@ public class InicialiacaoUsuario implements CommandLineRunner {
       usuario.setNome("mbala");
       usuario.setEmail("mbala@appgirassol.com");
       usuario.setTelefone("555555555");
+      usuario.setEspecialidade("Sysadm Linux e Windows");
       usuario.setDescricao("mbala");
+      usuario.setPapel(Papel.TECNICO);
+      usuarioRepositorio.save(usuario);
+    }
+
+    if (!usuarioRepositorio.existsByUsername("adao")) {
+      var usuario = new Usuario();
+      usuario.setUsername("adao");
+      usuario.setSenha(passwordEncoder.encode("adao"));
+      usuario.setNome("adao");
+      usuario.setEmail("adao@appgirassol.com");
+      usuario.setTelefone("555555555");
+      usuario.setEspecialidade("Microsoft office, Instalação de software");
+      usuario.setDescricao("adao");
       usuario.setPapel(Papel.TECNICO);
       usuarioRepositorio.save(usuario);
     }
@@ -53,16 +67,5 @@ public class InicialiacaoUsuario implements CommandLineRunner {
       usuarioRepositorio.save(usuario);
     }
 
-    if (!usuarioRepositorio.existsByUsername("bot")) {
-      var usuario = new Usuario();
-      usuario.setUsername("bot");
-      usuario.setSenha(passwordEncoder.encode("bot")); // Bot password (can be random)
-      usuario.setNome("Bot Assistant");
-      usuario.setEmail("bot@appgirassol.com");
-      usuario.setTelefone("");
-      usuario.setDescricao("Assistente de IA");
-      usuario.setPapel(Papel.ADMIN); // Or a new Papel.BOT
-      usuarioRepositorio.save(usuario);
-    }
   }
 }

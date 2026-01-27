@@ -83,7 +83,7 @@ public class PedidoService {
 
     novoPedido.setEstado(PedidoEstado.PENDENTE);
     novoPedido.setDescricao(pedido.descricao());
-    novoPedido.setTitulo(pedido.descricao());
+    novoPedido.setTitulo(pedido.titulo());
     novoPedido.setEndereco(pedido.endereco());
     novoPedido.setCliente(usuario);
 

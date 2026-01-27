@@ -1,7 +1,11 @@
 package ao.appsuportegirassol.dto;
 
 import ao.appsuportegirassol.models.Mensagem;
+import ao.appsuportegirassol.models.Usuario;
+
 import java.time.LocalDateTime;
+
+import static java.util.Optional.ofNullable;
 
 public record MensagemDTO(
     Long id,
@@ -15,11 +19,11 @@ public record MensagemDTO(
   public static MensagemDTO converte(Mensagem mensagem) {
     return new MensagemDTO(
         mensagem.getId(),
-        mensagem.getUsuario().getUsername(),
+        ofNullable(mensagem.getUsuario()).map(Usuario::getUsername).orElse(null),
         mensagem.getChat().getId(),
         mensagem.getChat().getPedido().getId(),
         mensagem.getConteudo(),
-        mensagem.getUsuario().getNome(),
+        ofNullable(mensagem.getUsuario()).map(Usuario::getNome).orElse(null),
         mensagem.getDataEnvio());
   }
 

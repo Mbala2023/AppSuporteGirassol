@@ -27,6 +27,8 @@ import PedidoDTO from "Frontend/generated/ao/appsuportegirassol/dto/PedidoDTO";
 import ChatDTO from "Frontend/generated/ao/appsuportegirassol/dto/ChatDTO";
 import { useSignal } from "@vaadin/hilla-react-signals";
 import { ActionOnLostSubscription } from "@vaadin/hilla-frontend";
+import remarkGfm from 'remark-gfm'
+import ReactMarkdown from "react-markdown";
 
 export const config: ViewConfig = {
   loginRequired: true,
@@ -62,48 +64,34 @@ export default function ChatPage() {
     }
   };
 
-  const fetchChatMessages = () => {
-    ChatService.getChat(Number(orderId))
-      .then((chat: ChatDTO | undefined) => {
-        if (!chat) {
-          navigate("/pedidos");
-          return;
-        }
+  const fetchChatMessages = async () => {
+    try {
+      const chat = await ChatService.getChat(Number(orderId));
+      if (!chat) {
+        navigate("/pedidos");
+        return;
+      }
 
-        setOrder(chat.pedidoDTO);
-        messages.value = chat.mensagens ?? [];
-      })
-      .catch((error) => {
-        console.error("Error fetching chat:", error);
-      });
+      setOrder(chat.pedidoDTO);
+      if ((chat.mensagens?.length ?? 0) > messages.value.length && chat.mensagens) {
+        messages.value = chat.mensagens;
+      }
+    } catch (error) {
+      console.error("Error fetching chat:", error);
+    }
   };
 
-useEffect(() => {
-  // Busca mensagens existentes antes de abrir o streaming
-  fetchChatMessages();
+  useEffect(() => {
+    // Busca mensagens existentes antes de abrir o streaming
+    fetchChatMessages();
 
-  // Subscribe à stream reativa
-  const subscription = ChatService.observeChat(Number(orderId))
-    .onNext((mensagem) => {
-      // Aqui a mensagem já está no formato enviado pelo backend
-      // Atualize o estado adicionando ao array
-      messages.value = [...messages.value, mensagem];
-    })
-    .onError((err) => {
-      console.error("Erro no chat SSE:", err);
-    })
-    .onSubscriptionLost(() => {
-      // Tenta resubscrever quando a conexão SSE cair
-      fetchChatMessages();
-      return ActionOnLostSubscription.RESUBSCRIBE;
-    });
+    // Subscribe à stream reativa
+    const subscription = setInterval(fetchChatMessages, 2000);
 
-  return () => {
-    // Cancela a assinatura quando o componente desmontar
-    subscription.cancel();
-  };
-}, []);
-
+    return () => {
+      clearInterval(subscription);
+    }
+  }, []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -150,7 +138,7 @@ useEffect(() => {
             <div className="flex items-center gap-3">
               <Avatar className="h-10 w-10 sm:h-12 sm:w-12">
                 <AvatarFallback className="text-xs sm:text-sm">
-                  {getInitials(user?.nome ?? "?")}
+                  {getInitials(user?.nome ?? "Inteligencia Artificial")}
                 </AvatarFallback>
               </Avatar>
               <div>
@@ -215,9 +203,9 @@ useEffect(() => {
                               : "bg-muted"
                           }`}
                         >
-                          <p className="text-xs sm:text-sm break-words">
+                          <ReactMarkdown remarkPlugins={[remarkGfm]}>
                             {mensagem.conteudo}
-                          </p>
+                          </ReactMarkdown>
                         </div>
                         <span className="text-xs text-muted-foreground">
                           {format(

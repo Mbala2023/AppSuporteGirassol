@@ -3,6 +3,12 @@ spring:
     virtual: enabled
   jpa:
     show-sql: true
+    hibernate:
+      ddl-auto: update
+  datasource:
+    url: jdbc:mysql://localhost:3306/girassol
+    username: root
+    password: 1234
 
 vaadin:
   launch-browser: true

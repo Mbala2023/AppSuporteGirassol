@@ -23,7 +23,7 @@ public class TechnicianAssignmentTool {
   private record TecnicoDetalhado(Long id, String nome, String especialidade) {
   }
 
-  @Tool("Lista de técnicos")
+  @Tool("Lista de técnicos disponiveis")
   public String listaDeTecnicos() {
     return usuarioRepositorio.findAll().stream()
         .filter(u -> u.getPapel() == Papel.TECNICO)
@@ -32,8 +32,8 @@ public class TechnicianAssignmentTool {
         .toString();
   }
 
-  @Tool("assign a technician to the order when the user asks for a human or the query is too complex")
-  public String assignTechnicianToOrder(@P("Id do técnico") Long id) {
+  @Tool("Atribuir tecnico a um pedido. Nota: Sempre consultar a lista de tecnicos")
+  public String atribuirTecnico(@P("Id do técnico") Long id) {
     Long orderId = ToolContextProvider.getOrderId();
     if (orderId == null) {
       return "Não foi possível identificar o pedido. Por favor, forneça o ID do pedido ou inicie um novo chat.";
@@ -42,11 +42,11 @@ public class TechnicianAssignmentTool {
     var technician = usuarioRepositorio.findById(id);
 
     if (technician.isEmpty()) {
-      return "Nenhum técnico disponível no momento. Por favor, tente novamente mais tarde.";
+      return "Tecnico não encontrado";
     }
 
     if (technician.get().getPapel() != Papel.TECNICO) {
-      return "Nenhum técnico disponível no momento. Por favor, tente novamente mais tarde.";
+      return "Usuario não é um tecnico, não pode ter um pedido atribuido, por favor consulte a lista de tecnicos";
     }
 
     var pedidoOptional = pedidoRepositorio.findById(orderId.intValue());
@@ -73,5 +73,30 @@ public class TechnicianAssignmentTool {
 
     return String.format("O técnico %s foi designado para o seu pedido. Ele entrará em contato em breve.",
         technician.get().getNome());
+  }
+
+  @Tool("Fechar pedido")
+  public String fecharPedido(@P("Id do pedido") Integer id) {
+    var pedido = pedidoRepositorio.findById(id);
+    if (pedido.isEmpty()) {
+      return "Pedido não encontrado";
+    }
+
+    var pedidoDetalhes = pedido.get();
+
+    var chat = chatRepositorio.findByPedido(pedidoDetalhes);
+    if (chat.isEmpty()) {
+      return "Chat do pedido não encontrado";
+    }
+
+    var chatDetalhes = chat.get();
+    chatDetalhes.setActive(false);
+    chatRepositorio.save(chatDetalhes);
+
+    pedidoDetalhes.setEstado(PedidoEstado.CONCLUIDO);
+    pedidoDetalhes.setConcluidoEm(LocalDateTime.now());
+    pedidoRepositorio.save(pedidoDetalhes);
+
+    return "Pedido %s foi fechado com sucesso!".formatted(pedidoDetalhes);
   }
 }
