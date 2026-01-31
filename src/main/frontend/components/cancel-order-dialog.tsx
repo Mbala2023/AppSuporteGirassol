@@ -10,23 +10,18 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { Button } from "@/components/ui/button"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
 
 interface CancelOrderDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onConfirm: (motivo: string) => void
+  onConfirm: (orderId: number) => void
   orderId: number
 }
 
 export function CancelOrderDialog({ open, onOpenChange, onConfirm, orderId }: CancelOrderDialogProps) {
-  const [motivo, setMotivo] = useState("")
-
   const handleConfirm = () => {
-    if (motivo.trim()) {
-      onConfirm(motivo)
-      setMotivo("")
+    if (orderId !== -1) {
+      onConfirm(orderId)
       onOpenChange(false)
     }
   }
@@ -40,23 +35,11 @@ export function CancelOrderDialog({ open, onOpenChange, onConfirm, orderId }: Ca
             Tem certeza que deseja cancelar este pedido? Esta ação não pode ser desfeita.
           </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
-          <div className="space-y-2">
-            <Label htmlFor="motivo">Motivo do cancelamento</Label>
-            <Textarea
-              id="motivo"
-              placeholder="Por favor, informe o motivo do cancelamento..."
-              value={motivo}
-              onChange={(e) => setMotivo(e.target.value)}
-              rows={4}
-            />
-          </div>
-        </div>
         <DialogFooter>
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Voltar
           </Button>
-          <Button variant="destructive" onClick={handleConfirm} disabled={!motivo.trim()}>
+          <Button variant="destructive" onClick={handleConfirm} disabled={orderId === -1}>
             Confirmar Cancelamento
           </Button>
         </DialogFooter>

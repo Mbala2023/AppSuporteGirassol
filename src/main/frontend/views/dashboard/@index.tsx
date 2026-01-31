@@ -97,7 +97,7 @@ export default function DashboardPage() {
     }
     
     const fetchData = async () => {
-      const pedidos = await PedidoService.encontrarPedidosCliente();
+      const pedidos = await PedidoService.todosPedidos();
       const usuarios = await UsuarioService.listarUsuarios();
       const avaliacoes = await AvaliacaoService.listarAvaliacoes();
 
@@ -113,7 +113,7 @@ export default function DashboardPage() {
       ).length;
       const pedidosConcluidos = pedidos.filter(
         (o) =>
-          o.endereco === PedidoEstado.CONCLUIDO ||
+          o.estado === PedidoEstado.CONCLUIDO ||
         o.estado === PedidoEstado.AVALIADO,
       ).length;
       const pedidosCancelados = pedidos.filter(

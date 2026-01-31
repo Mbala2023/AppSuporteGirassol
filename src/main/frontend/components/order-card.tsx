@@ -89,13 +89,19 @@ export function OrderCard({
   const canCancel =
     isClient &&
     cliente?.username === user?.username &&
-    (order.estado === PedidoEstado.PENDENTE ||
-      order.estado === PedidoEstado.ACEITO);
+    order.estado &&
+    (order.estado !== PedidoEstado.CONCLUIDO &&
+      order.estado !== PedidoEstado.AVALIADO);
 
   const canComplete =
-    isTechnician &&
-    tecnico?.username === user?.username &&
-    order.estado === PedidoEstado.ACEITO;
+    isClient &&
+    cliente?.username === user?.username &&
+    order.estado &&
+    (order.estado !== PedidoEstado.CONCLUIDO && 
+      order.estado !== PedidoEstado.CANCELADO &&
+      order.estado !== PedidoEstado.AVALIADO
+    );
+
 
   const canAccept =
     isTechnician && !tecnico && order.estado === PedidoEstado.PENDENTE;
@@ -103,6 +109,7 @@ export function OrderCard({
     isClient &&
     cliente?.username === user?.username &&
     order.estado === PedidoEstado.CONCLUIDO &&
+    order.tecnico &&
     onRate;
 
   return (

@@ -28,9 +28,15 @@ public class PedidoService {
   private final PedidoRepositorio repositorio;
   private final UsuarioRepositorio usuarioRepositorio;
   private final ChatRepositorio chatRepositorio;
+  private final UsuarioService usuarioService;
 
   public Pedido encontrarPedido(@NonNull Integer id) {
     return repositorio.findById(id).orElse(null);
+  }
+
+  @RolesAllowed("ROLE_ADMIN")
+  public @NonNull List<@NonNull Pedido> todosPedidos() {
+    return repositorio.findAll();
   }
 
   @RolesAllowed({"ROLE_CLIENTE", "ROLE_ADMIN"})
@@ -99,5 +105,69 @@ public class PedidoService {
     chatRepositorio.save(chat);
 
     return pedidoSalvo.getId();
+  }
+
+  @RolesAllowed("ROLE_CLIENTE")
+  public void cancelarPedido(@NonNull Integer id) {
+    var pedido = repositorio.findById(id).orElse(null);
+
+    if (pedido == null) {
+      return;
+    }
+
+    if (!pedido.podeCancelar()) {
+      return;
+    }
+
+    var chat = chatRepositorio.findByPedido(pedido).orElse(null);
+
+    if (chat == null) {
+      return;
+    }
+
+    chat.setActive(false);
+    pedido.setEstado(PedidoEstado.CANCELADO);
+    repositorio.save(pedido);
+  }
+
+  @RolesAllowed("ROLE_CLIENTE")
+  public void concluirPedido(@NonNull Integer id) {
+    var pedido = repositorio.findById(id).orElse(null);
+
+    if (pedido == null) {
+      return;
+    }
+
+    if (!pedido.podeConcluir()) {
+      return;
+    }
+
+    var chat = chatRepositorio.findByPedido(pedido).orElse(null);
+
+    if (chat == null) {
+      return;
+    }
+
+    chat.setActive(false);
+    pedido.setEstado(PedidoEstado.CONCLUIDO);
+    repositorio.save(pedido);
+  }
+
+  @RolesAllowed("ROLE_TECNICO")
+  public void aceitarPedido(@NonNull Integer id) {
+    var pedido = repositorio.findById(id).orElse(null);
+
+    if(pedido == null) {
+      return;
+    }
+
+    var tecnico = usuarioService.logado();
+
+    if (tecnico.getPapel() != Papel.TECNICO) {
+      return;
+    }
+
+    pedido.setTecnico(tecnico);
+    repositorio.save(pedido);
   }
 }

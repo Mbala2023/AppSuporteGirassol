@@ -33,4 +33,12 @@ public class Pedido {
   public void prePersist() {
     dataHora = LocalDateTime.now();
   }
+
+  public boolean podeCancelar() {
+    return estado != PedidoEstado.AVALIADO && estado != PedidoEstado.CONCLUIDO;
+  }
+
+  public boolean podeConcluir() {
+    return estado != PedidoEstado.AVALIADO && estado != PedidoEstado.CONCLUIDO;
+  }
 }

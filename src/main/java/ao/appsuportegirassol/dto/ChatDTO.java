@@ -5,10 +5,11 @@ import org.jspecify.annotations.NonNull;
 
 import java.util.List;
 
-public record ChatDTO(PedidoDTO pedidoDTO, List<@NonNull MensagemDTO> mensagens) {
+public record ChatDTO(PedidoDTO pedidoDTO, boolean ativo, List<@NonNull MensagemDTO> mensagens) {
   public static ChatDTO converter(Chat chat) {
     return new ChatDTO(
         PedidoDTO.converte(chat.getPedido()),
+        chat.isActive(),
         chat.getMensagens().stream().map(MensagemDTO::converte).toList()
     );
   }

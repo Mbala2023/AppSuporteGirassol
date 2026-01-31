@@ -45,6 +45,7 @@ export default function ChatPage() {
   } = useAuth();
 
   const messages = useSignal<MensagemDTO[]>([]);
+  const isActive = useSignal<boolean>(false);
   const [newMessage, setNewMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
@@ -73,6 +74,7 @@ export default function ChatPage() {
       }
 
       setOrder(chat.pedidoDTO);
+      isActive.value = chat.ativo;
       if ((chat.mensagens?.length ?? 0) > messages.value.length && chat.mensagens) {
         messages.value = chat.mensagens;
       }
@@ -236,11 +238,18 @@ export default function ChatPage() {
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 className="flex-1 text-sm"
+                disabled={
+                  (order?.estado === PedidoEstado.CANCELADO || order?.estado === PedidoEstado.CONCLUIDO || order?.estado === PedidoEstado.AVALIADO) ||
+                  !isActive.value
+                }
               />
               <Button
                 type="submit"
                 size="icon"
-                disabled={!newMessage.trim()}
+                disabled={!newMessage.trim() || 
+                  (order?.estado === PedidoEstado.CANCELADO || order?.estado === PedidoEstado.CONCLUIDO || order?.estado === PedidoEstado.AVALIADO) ||
+                  !isActive.value
+                }
                 className="flex-shrink-0"
               >
                 <Send className="h-4 w-4" />

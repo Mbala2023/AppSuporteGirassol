@@ -15,10 +15,8 @@ import * as PedidoService from "@/generated/PedidoService";
 import PedidoEstado from "Frontend/generated/ao/appsuportegirassol/models/PedidoEstado";
 import { ViewConfig } from "@vaadin/hilla-file-router/types.js";
 import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
-import { useAuth } from "Frontend/auth";
 import { RatingDialog } from "Frontend/components/rating-dialog";
-import { UsuarioService } from "Frontend/generated/endpoints";
-import { set } from "date-fns";
+import { AvaliacaoService, UsuarioService } from "Frontend/generated/endpoints";
 import CriarPedido from "Frontend/generated/ao/appsuportegirassol/dto/CriarPedido";
 import MensagemDTO from "Frontend/generated/ao/appsuportegirassol/dto/MensagemDTO";
 
@@ -44,6 +42,9 @@ export default function PedidosPage() {
     } else if (user?.papel === Papel.TECNICO) {
       // Técnicos veem seus pedidos e pedidos pendentes
       const data = await PedidoService.encontrarPedidosTecnico();
+      setOrders(data);
+    } else {
+      const data = await PedidoService.todosPedidos();
       setOrders(data);
     }
   };
@@ -82,85 +83,54 @@ export default function PedidosPage() {
     setCancelDialogOpen(true);
   };
 
-  const confirmCancelOrder = (motivo: string) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === selectedOrderId
-          ? {
-              ...order,
-              estado: PedidoEstado.CANCELADO,
-              nota: motivo,
-              updatedAt: new Date(),
-            }
-          : order,
-      ),
-    );
+  const confirmCancelOrder = async (id: number) => {
+    try {
+    await PedidoService.cancelarPedido(id)
 
     toast("Pedido cancelado", {
       description: "O pedido foi cancelado com sucesso.",
     });
-  };
 
-  const handleCompleteOrder = (orderId: number) => {
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              estado: PedidoEstado.CONCLUIDO,
-              concluidoEm: new Date().toISOString(),
-            }
-          : order,
-      ),
-    );
-
-    toast("Atendimento concluído", {
-      description: "O cliente poderá avaliar o atendimento agora.",
+    fetchOrders();
+  } catch(error) {
+    toast("Pedido cancelado", {
+      description: "O pedido não foi cancelado.",
     });
+  }
   };
 
-  const handleAcceptOrder = (orderId: number) => {
-    const order = orders.find((o) => o.id === orderId);
+  const handleCompleteOrder = async (orderId: number) => {
+    try {
+      await PedidoService.concluirPedido(orderId)
+      
+      toast("Atendimento concluído", {
+        description: "O cliente poderá avaliar o atendimento agora.",
+      });
 
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === orderId
-          ? {
-              ...order,
-              estado: PedidoEstado.EM_ANDAMENTO,
-              tecnicoId: user?.id,
-              updatedAt: new Date(),
-            }
-          : order,
-      ),
-    );
+      fetchOrders();
+    } catch(error) {
 
-    if (user && order) {
-      const welcomeMessage: MensagemDTO = {
-        conteudo: `Olá! Sou ${user.nome}, ${
-          user.especialidade || "técnico"
-        }. Aceitei seu pedido e estou pronto para atendê-lo. ${
-          user.telefone
-            ? `Você pode me contatar pelo telefone ${user.telefone}.`
-            : ""
-        } Vamos resolver seu problema!`,
-        pedidoId: order.id!,
-        username: user.username!,
-        nomeDoUsuario: user.nome!,
-      };
-
-      // Add to global chat store (accessing the same store from chat page)
-      if (typeof window !== "undefined") {
-        const chatStore = (window as any).chatMessagesStore || [];
-        chatStore.push(welcomeMessage);
-        (window as any).chatMessagesStore = chatStore;
-      }
     }
 
+  };
+
+  const handleAcceptOrder = async (orderId: number) => {
+    const order = orders.find((o) => o.id === orderId);
+
+    try {
+      await PedidoService.aceitarPedido(orderId);
+    
     toast("Pedido aceito", {
       description:
-        "Você aceitou este pedido. Uma mensagem automática foi enviada ao cliente.",
+      "Você aceitou este pedido. Uma mensagem automática foi enviada ao cliente.",
     });
+
+    fetchOrders();
+  } catch(error) {
+    toast("Erro ao aceitar pedido", {
+      description: "Ocorreu um erro ao aceitar o pedido. Tente novamente.",
+    });
+  }
   };
 
   const handleRateOrder = (orderId: number) => {
@@ -171,27 +141,22 @@ export default function PedidosPage() {
     }
   };
 
-  const handleSubmitRating = (rating: number, comentario: string) => {
+  const handleSubmitRating = async (rating: number, comentario: string) => {
     if (!orderToRate || !user) return;
-
-    // Atualizar status do pedido para avaliado
-    setOrders((prevOrders) =>
-      prevOrders.map((order) =>
-        order.id === orderToRate.id
-          ? {
-              ...order,
-              estado: PedidoEstado.AVALIADO,
-              updatedAt: new Date(),
-            }
-          : order,
-      ),
-    );
+try {
+    await AvaliacaoService.avaliarTecnico(orderToRate.id ?? -1, rating)
 
     toast("Avaliação enviada!", {
       description: "Obrigado pelo seu feedback.",
     });
 
     setOrderToRate(null);
+    fetchOrders();
+  } catch(error) {
+    toast("Erro ao enviar avaliação", {
+      description: "Ocorreu um erro ao enviar sua avaliação. Tente novamente.",
+    });
+  }
   };
 
   const filterOrdersByStatus = (statuses: PedidoEstado[]) => {
@@ -248,6 +213,7 @@ export default function PedidosPage() {
                   order={order}
                   onCancel={handleCancelOrder}
                   onComplete={handleCompleteOrder}
+                  onRate={handleRateOrder}
                 />
               ))
             )}

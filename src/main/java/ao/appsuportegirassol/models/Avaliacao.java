@@ -16,7 +16,7 @@ public class Avaliacao {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "gn_avaliacoes")
   private Long id;
-  private short estrelas;
+  private int estrelas;
   @ManyToOne(fetch = FetchType.LAZY)
   private Usuario tecnico;
   private LocalDate dataHora;
