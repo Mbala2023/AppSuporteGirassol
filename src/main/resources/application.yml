@@ -12,16 +12,23 @@ spring:
   docker:
     compose:
       enabled: false
+  mail:
+    host: smtp.gmail.com
+    username: username
+    password: password
+    properties:
+      transport:
+        protocol: smtp
+      smtp:
+        port: 587
+        auth: true
+        starttls:
+          enable: true
+          required: true
 
 vaadin:
   launch-browser: true
 
 ai:
   token: ${GEMINI_TOKEN:AIzaSyD9D3Q_ywyrvvkXO9uMAzrHD4QSha5a73s}
-
-logging:
-  level:
-    org.springframework.messaging: debug
-    org.springframework.web.socket: debug
-    org.springframework.messaging.simp: debug
-    ao.appsuportegirassol: debug
+  

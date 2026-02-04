@@ -9,16 +9,10 @@ import com.vaadin.hilla.BrowserCallable;
 import jakarta.annotation.security.RolesAllowed;
 
 import java.time.LocalDateTime;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.NonNull;
-import org.springframework.http.codec.ServerSentEvent;
 import org.springframework.transaction.annotation.Transactional;
-import reactor.core.publisher.Flux;
-import reactor.core.publisher.Sinks;
-import reactor.core.publisher.Sinks.Many;
 
 @RequiredArgsConstructor
 @BrowserCallable
@@ -27,7 +21,6 @@ public class ChatService {
   private final UsuarioRepositorio usuarioRepositorio;
   private final AIAssistentService aiAssistentService;
   private final UsuarioService usuarioService;
-  private final Map<Long, Many<MensagemDTO>> chatSinks = new ConcurrentHashMap<>();
 
   @RolesAllowed("ROLE_USER")
   public ChatDTO getChat(@NonNull Long chatId) {
@@ -38,22 +31,6 @@ public class ChatService {
     }
 
     return null;
-  }
-
-  @RolesAllowed("ROLE_USER")
-  public Flux<@NonNull MensagemDTO> observeChat(@NonNull Long chatId) {
-    // Cria o sink se não existir
-    var sink = chatSinks.computeIfAbsent(chatId, id ->
-        Sinks.many().multicast().onBackpressureBuffer()
-    );
-
-    return sink
-        .asFlux()
-        .doOnCancel(() -> {
-          if (sink.currentSubscriberCount() <= 0) {
-            chatSinks.remove(chatId);
-          }
-        });
   }
 
   @Transactional
@@ -68,7 +45,6 @@ public class ChatService {
           "Ocorreu um erro",
           "Sistema",
           LocalDateTime.now());
-      pushMessageToSink(chatId, errorMessage);
       return;
     }
     var usuario = usuarioService.logado();
@@ -85,9 +61,6 @@ public class ChatService {
     chatModel.getMensagens().add(messageModel);
     chatRepositorio.save(chatModel);
 
-    // Push the new message to the stream
-    pushMessageToSink(chatId, MensagemDTO.converte(messageModel));
-
     // If chat is active and no technician is assigned, get AI response
     if (chatModel.isActive() && chatModel.getTecnico() == null) {
       var aiResponse = aiAssistentService.respondUser(messageModel);
@@ -100,17 +73,6 @@ public class ChatService {
       chatModel.getMensagens().add(aiMessageModel);
       chatRepositorio.save(chatModel);
 
-      // Push AI response to the stream
-      pushMessageToSink(chatId, aiResponse);
-    }
-  }
-
-  @RolesAllowed("ROLE_USER")
-  private void pushMessageToSink(@NonNull Long chatId, @NonNull MensagemDTO message) {
-    var sink = chatSinks.get(chatId);
-
-    if (sink != null) {
-      sink.tryEmitNext(message);
     }
   }
 

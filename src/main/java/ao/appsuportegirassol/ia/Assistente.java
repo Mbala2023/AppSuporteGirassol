@@ -1,10 +1,11 @@
-package ao.appsuportegirassol.configs;
+package ao.appsuportegirassol.ia;
 
+import dev.langchain4j.service.MemoryId;
 import dev.langchain4j.service.SystemMessage;
 import dev.langchain4j.service.UserMessage;
 import dev.langchain4j.service.V;
 
-public interface Assistant {
+public interface Assistente {
     @SystemMessage("""
         Tu és um assistente de IA, da Suporte Girassol, um sistema de atendimento ao cliente.
         
@@ -20,5 +21,5 @@ public interface Assistant {
         {{detalhe}}
         
         """)
-    String chat(@V("detalhe") String detalhe, @UserMessage String userMessage);
+    String chat(@MemoryId Long chatId, @V("detalhe") String detalhe, @UserMessage String userMessage);
 }

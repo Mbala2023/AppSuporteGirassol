@@ -1,5 +1,7 @@
 package ao.appsuportegirassol.configs;
 
+import ao.appsuportegirassol.ia.Assistente;
+import ao.appsuportegirassol.ia.MemoriaPersistente;
 import ao.appsuportegirassol.services.TechnicianAssignmentTool;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
@@ -23,11 +25,18 @@ public class AIConfig {
   }
 
   @Bean
-  public Assistant assistant(ChatModel chatModel, TechnicianAssignmentTool technicianAssignmentTool) {
-    return AiServices.builder(Assistant.class)
-            .chatModel(chatModel)
-            .chatMemory(MessageWindowChatMemory.withMaxMessages(10))
-            .tools(technicianAssignmentTool)
-            .build();
+  public Assistente assistant(ChatModel chatModel,
+                              TechnicianAssignmentTool technicianAssignmentTool,
+                              MemoriaPersistente memoriaPersistente) {
+    return AiServices.builder(Assistente.class)
+        .chatModel(chatModel)
+        .chatMemoryProvider(memoryId ->
+            MessageWindowChatMemory.builder()
+                .id(memoryId)
+                .chatMemoryStore(memoriaPersistente)
+                .maxMessages(20)
+                .build())
+        .tools(technicianAssignmentTool)
+        .build();
   }
 }
