@@ -20,7 +20,7 @@ import { toast } from "sonner"
 interface ChangePasswordDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onConfirm: (currentPassword: string, newPassword: string) => boolean
+  onConfirm: (currentPassword: string, newPassword: string) => Promise<boolean>
 }
 
 export function ChangePasswordDialog({ open, onOpenChange, onConfirm }: ChangePasswordDialogProps) {
@@ -31,7 +31,7 @@ export function ChangePasswordDialog({ open, onOpenChange, onConfirm }: ChangePa
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     if (!currentPassword || !newPassword || !confirmPassword) {
@@ -55,7 +55,7 @@ export function ChangePasswordDialog({ open, onOpenChange, onConfirm }: ChangePa
       return
     }
 
-    const success = onConfirm(currentPassword, newPassword)
+    const success = await onConfirm(currentPassword, newPassword)
 
     if (success) {
       setCurrentPassword("")

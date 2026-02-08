@@ -14,21 +14,18 @@ spring:
       enabled: false
   mail:
     host: smtp.gmail.com
-    username: username
-    password: password
+    username: victoriapreciosaesmeralda@gmail.com
+    port: 587
+    password: jhdj_kxfj_vecj_nuth
     properties:
-      transport:
-        protocol: smtp
-      smtp:
-        port: 587
-        auth: true
-        starttls:
-          enable: true
-          required: true
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 vaadin:
   launch-browser: true
 
 ai:
   token: ${GEMINI_TOKEN:AIzaSyD9D3Q_ywyrvvkXO9uMAzrHD4QSha5a73s}
-  

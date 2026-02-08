@@ -23,8 +23,8 @@ export function Navbar() {
   const isAdmin = user?.authorities.includes("ROLE_ADMIN")
   const isTecnico = user?.authorities.includes("ROLE_TECNICO")
 
-  const handleLogout = () => {
-    logout()
+  const handleLogout = async () => {
+    await logout()
     router("/")
   }
 

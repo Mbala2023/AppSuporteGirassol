@@ -38,47 +38,7 @@ import {
 import Usuario from "Frontend/generated/ao/appsuportegirassol/models/Usuario";
 import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel";
 import { UsuarioService } from "Frontend/generated/endpoints";
-
-// Mock ratings for demo
-const mockRatings: Rating[] = [
-  {
-    id: "r1",
-    orderId: 3,
-    tecnicoId: 5,
-    clienteId: 6,
-    estrelas: 5,
-    comentario: "Ótimo serviço!",
-    createdAt: new Date("2026-01-12T12:00:00"),
-  },
-  {
-    id: "r2",
-    orderId: 4,
-    tecnicoId: 5,
-    clienteId: 3,
-    estrelas: 4,
-    comentario: "Muito bom",
-    createdAt: new Date("2026-01-13T18:00:00"),
-  },
-  {
-    id: "r3",
-    orderId: 2,
-    tecnicoId: 2,
-    clienteId: 4,
-    estrelas: 3,
-    comentario: "Satisfatório",
-    createdAt: new Date("2026-01-11T16:00:00"),
-  },
-];
-
-interface Rating {
-  id: string;
-  orderId: number;
-  tecnicoId: number;
-  clienteId: number;
-  estrelas: number;
-  comentario: string;
-  createdAt: Date;
-}
+import Avaliacao from "Frontend/generated/ao/appsuportegirassol/models/Avaliacao";
 
 export const config: ViewConfig = {
   loginRequired: true,
@@ -88,7 +48,7 @@ export const config: ViewConfig = {
 export default function PerfilPage() {
   const router = useNavigate();
   const [userOrders, setUserOrders] = useState<Pedido[]>([]);
-  const [userRatings, setUserRatings] = useState<Rating[]>([]);
+  const [userRatings, setUserRatings] = useState<Avaliacao[]>([]);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
   const [user, setUser] = useState<Usuario>();
 
@@ -104,8 +64,7 @@ export default function PerfilPage() {
         setUserOrders(data);
       });
 
-      const ratings = mockRatings.filter((r) => r.tecnicoId === 1);
-      setUserRatings(ratings);
+//      setUserRatings(ratings);
     } else if (user?.papel === Papel.CLIENTE) {
       encontrarPedidosCliente().then((data) => {
         setUserOrders(data);
@@ -137,13 +96,14 @@ export default function PerfilPage() {
       o.estado === PedidoEstado.EM_ANDAMENTO,
   ).length;
 
-  const handleChangePassword = (
+  const handleChangePassword = async (
     currentPassword: string,
     newPassword: string,
-  ): boolean => {
+  ): Promise<boolean> => {
     const success = {}; //changePassword(currentPassword, newPassword);
 
     if (success) {
+     await  UsuarioService.alterarSenha(currentPassword, newPassword)
       toast("Senha alterada!", {
         description: "Sua senha foi alterada com sucesso.",
       });
@@ -305,7 +265,7 @@ export default function PerfilPage() {
                 <div className="space-y-4">
                   {userRatings.map((rating) => {
                     const order = userOrders.find(
-                      (o) => o.id === rating.orderId,
+                      (o) => o.id === -1
                     );
                     const cliente = user;
 
@@ -319,18 +279,13 @@ export default function PerfilPage() {
                             <p className="font-medium">{order?.titulo}</p>
                             <p className="text-sm text-muted-foreground">
                               {cliente?.nome} •{" "}
-                              {format(rating.createdAt, "dd 'de' MMMM", {
+                              {format(rating?.dataHora ?? "", "dd 'de' MMMM", {
                                 locale: ptBR,
                               })}
                             </p>
                           </div>
                           <RatingDisplay rating={rating.estrelas} />
                         </div>
-                        {rating.comentario && (
-                          <p className="text-sm text-muted-foreground italic">
-                            "{rating.comentario}"
-                          </p>
-                        )}
                       </div>
                     );
                   })}

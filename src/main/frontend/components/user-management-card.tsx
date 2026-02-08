@@ -55,6 +55,7 @@ const mockUsers: User[] = [
 import { toast } from "sonner"
 import Usuario from "Frontend/generated/ao/appsuportegirassol/models/Usuario"
 import Papel from "Frontend/generated/ao/appsuportegirassol/models/Papel"
+import { UsuarioService } from "Frontend/generated/endpoints"
 
 
 interface UserManagementCardProps {
@@ -65,28 +66,20 @@ export function UserManagementCard({ user }: UserManagementCardProps) {
   // Use provided user or fallback to first mock user
   const [currentUser, setCurrentUser] = useState(user)
 
-  const handlePromoteToAdmin = () => {
-    const userIndex = mockUsers.findIndex((u) => u.id === currentUser?.id)
-    if (userIndex !== -1) {
-      mockUsers[userIndex].role = "admin"
-      setCurrentUser({ ...(currentUser!), papel: Papel.ADMIN })
+  const handlePromoteToAdmin = async () => {
+    await UsuarioService.promover(currentUser?.username ?? "")
       toast("Usuário promovido!", {
         description: `${currentUser?.nome} agora é um administrador.`,
       })
       window.location.reload()
-    }
   }
 
-  const handleDemoteFromAdmin = () => {
-    const userIndex = mockUsers.findIndex((u) => u.id === currentUser?.id)
-    if (userIndex !== -1) {
-      mockUsers[userIndex].role = "tecnico"
-      setCurrentUser({ ...(currentUser!), papel: Papel.TECNICO })
+  const handleDemoteFromAdmin = async () => {
+    await UsuarioService.rebaixar(currentUser?.username ?? "")
       toast("Permissões alteradas", {
         description: `${currentUser?.nome} agora é um técnico.`,
       })
       window.location.reload()
-    }
   }
 
   const handleDeleteUser = () => {

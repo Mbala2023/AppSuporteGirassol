@@ -1,5 +1,6 @@
 package ao.appsuportegirassol.services;
 
+import ao.appsuportegirassol.models.Papel;
 import ao.appsuportegirassol.models.Usuario;
 import ao.appsuportegirassol.repository.UsuarioRepositorio;
 import com.vaadin.flow.server.auth.AnonymousAllowed;
@@ -66,6 +67,52 @@ public class UsuarioService {
     return usuario;
   }
 
+  @RolesAllowed("ROLE_ADMIN")
+  public void promover(@NonNull String username) {
+    var usuario = usuarioRepositorio.findByUsername(username);
+
+    if (usuario == null) {
+      return;
+    }
+
+    var logado = logado();
+
+    if (logado.getUsername().equals(usuario.getUsername())) {
+      return;
+    }
+
+    if (usuario.getPapel() != Papel.TECNICO) {
+      return;
+    }
+
+    usuario.setPapel(Papel.ADMIN);
+
+    usuarioRepositorio.save(usuario);
+  }
+
+  @RolesAllowed("ROLE_ADMIN")
+  public void rebaixar(@NonNull String username) {
+    var usuario = usuarioRepositorio.findByUsername(username);
+
+    if (usuario == null) {
+      return;
+    }
+
+    var logado = logado();
+
+    if (logado.getUsername().equals(usuario.getUsername())) {
+      return;
+    }
+
+    if (usuario.getPapel() != Papel.ADMIN) {
+      return;
+    }
+
+    usuario.setPapel(Papel.TECNICO);
+
+    usuarioRepositorio.save(usuario);
+  }
+
   @AnonymousAllowed
   public void redefinirSenha(@NonNull String email) {
     var usuario = usuarioRepositorio.findByEmail(email).orElse(null);
@@ -80,7 +127,6 @@ public class UsuarioService {
     usuarioRepositorio.save(usuario);
 
     var email1 = new SimpleMailMessage();
-    email1.setFrom("");
     email1.setTo(usuario.getEmail());
     email1.setSubject("Redefinição de senha");
     email1.setSentDate(new Date());
@@ -103,5 +149,20 @@ public class UsuarioService {
     }
 
     return password.toString();
+  }
+
+  @RolesAllowed("ROLE_USER")
+  public void alterarSenha(@NonNull String senhaAtual, @NonNull String senhaNova) {
+    var usuario = logado();
+    var senha = usuario.getSenha();
+
+    /*if (!passwordEncoder.matches(senhaAtual, senha)) {
+      System.out.println("Senhas não batem");
+      return;
+    }*/
+
+    var senhaNovaCodificada = passwordEncoder.encode(senhaNova);
+    usuario.setSenha(senhaNovaCodificada);
+    usuarioRepositorio.save(usuario);
   }
 }
