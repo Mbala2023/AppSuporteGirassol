@@ -28,4 +28,4 @@ vaadin:
   launch-browser: true
 
 ai:
-  token: ${GEMINI_TOKEN:AIzaSyD9D3Q_ywyrvvkXO9uMAzrHD4QSha5a73s}
+  token: ${OPENAI_TOKEN}

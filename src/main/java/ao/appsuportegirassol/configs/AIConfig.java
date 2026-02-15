@@ -5,23 +5,29 @@ import ao.appsuportegirassol.ia.MemoriaPersistente;
 import ao.appsuportegirassol.services.TechnicianAssignmentTool;
 import dev.langchain4j.memory.chat.MessageWindowChatMemory;
 import dev.langchain4j.model.chat.ChatModel;
-import dev.langchain4j.model.ollama.OllamaChatModel;
+import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 @Configuration
 public class AIConfig {
+  private String apiKey = "token";
 
   @Bean
   public ChatModel chatModel() {
-    return OllamaChatModel.builder()
+    return OpenAiChatModel.builder()
+        .apiKey(apiKey)
+        .modelName("gpt-4o-mini")
+        .build();
+
+        /*OllamaChatModel.builder()
         .baseUrl("http://localhost:11434")
         .temperature(0.0)
         .logRequests(true)
         .logResponses(true)
         .modelName("llama3.2")
-        .build();
+        .build();*/
   }
 
   @Bean
