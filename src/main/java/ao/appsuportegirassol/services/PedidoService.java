@@ -163,11 +163,11 @@ public class PedidoService {
 
     var tecnico = usuarioService.logado();
 
-    if (tecnico.getPapel() != Papel.TECNICO) {
+    if (tecnico.papel() != Papel.TECNICO) {
       return;
     }
 
-    pedido.setTecnico(tecnico);
+    pedido.setTecnico(usuarioRepositorio.findByUsername(tecnico.username()));
     repositorio.save(pedido);
   }
 }

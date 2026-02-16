@@ -26,7 +26,7 @@ public class ChatService {
   public ChatDTO getChat(@NonNull Long chatId) {
     var usuario = usuarioService.logado();
 
-    if (isUserInChat(usuario.getUsername(), chatId)) {
+    if (isUserInChat(usuario.username(), chatId)) {
       return chatRepositorio.findById(chatId).map(ChatDTO::converter).orElse(null);
     }
 
@@ -48,14 +48,15 @@ public class ChatService {
       return;
     }
     var usuario = usuarioService.logado();
+    var entidade = usuarioRepositorio.findByUsername(usuario.username());
 
-    if (chatModel.getTecnico() == null && usuario.getPapel() == Papel.TECNICO) {
-      chatModel.setTecnico(usuario);
+    if (chatModel.getTecnico() == null && usuario.papel() == Papel.TECNICO) {
+      chatModel.setTecnico(entidade);
     }
 
     var messageModel = mensagem.toModel();
     messageModel.setChat(chatModel);
-    messageModel.setUsuario(usuario); // Set the logged-in user as the sender
+    messageModel.setUsuario(entidade); // Set the logged-in user as the sender
 
     // Save the incoming message
     chatModel.getMensagens().add(messageModel);

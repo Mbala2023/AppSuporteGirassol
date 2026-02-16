@@ -20,14 +20,16 @@ public class TechnicianAssignmentTool {
   private final PedidoRepositorio pedidoRepositorio;
   private final ChatRepositorio chatRepositorio;
 
-  private record TecnicoDetalhado(Long id, String nome, String especialidade) {
+  private record TecnicoDetalhado(Long id, String nome, String disponibilidade, String especialidade) {
   }
 
   @Tool("Lista de técnicos disponiveis")
   public String listaDeTecnicos() {
     return usuarioRepositorio.findAll().stream()
         .filter(u -> u.getPapel() == Papel.TECNICO)
-        .map(u -> new TecnicoDetalhado(u.getId(), u.getNome(), u.getEspecialidade()))
+        .map(u -> new TecnicoDetalhado(u.getId(), u.getNome(),
+            pedidoRepositorio.findByTecnicoAndEstado(u, PedidoEstado.ACEITO).isEmpty() ? "Disponivel" : "Ocupado"
+            , u.getEspecialidade()))
         .toList()
         .toString();
   }

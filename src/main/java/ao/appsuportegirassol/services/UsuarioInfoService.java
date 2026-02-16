@@ -30,6 +30,6 @@ public class UsuarioInfoService {
     final List<String> authorities = Objects.requireNonNull(auth).getAuthorities().stream()
         .map(GrantedAuthority::getAuthority).toList();
 
-    return new UsuarioInfo(usuario.getId(), auth.getName(), usuario.getUsername(), authorities);
+    return new UsuarioInfo(usuario.id(), auth.getName(), usuario.username(), authorities);
   }
 }

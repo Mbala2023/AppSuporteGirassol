@@ -20,14 +20,6 @@ public class AIConfig {
         .apiKey(apiKey)
         .modelName("gpt-4o-mini")
         .build();
-
-        /*OllamaChatModel.builder()
-        .baseUrl("http://localhost:11434")
-        .temperature(0.0)
-        .logRequests(true)
-        .logResponses(true)
-        .modelName("llama3.2")
-        .build();*/
   }
 
   @Bean
@@ -37,11 +29,7 @@ public class AIConfig {
     return AiServices.builder(Assistente.class)
         .chatModel(chatModel)
         .chatMemoryProvider(memoryId ->
-            MessageWindowChatMemory.builder()
-                .id(memoryId)
-                .chatMemoryStore(memoriaPersistente)
-                .maxMessages(20)
-                .build())
+            MessageWindowChatMemory.withMaxMessages(20))
         .tools(technicianAssignmentTool)
         .build();
   }

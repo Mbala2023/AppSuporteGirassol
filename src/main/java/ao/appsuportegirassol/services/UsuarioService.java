@@ -1,5 +1,6 @@
 package ao.appsuportegirassol.services;
 
+import ao.appsuportegirassol.dto.UsuarioDTO;
 import ao.appsuportegirassol.models.Papel;
 import ao.appsuportegirassol.models.Usuario;
 import ao.appsuportegirassol.repository.UsuarioRepositorio;
@@ -47,7 +48,7 @@ public class UsuarioService {
   }
 
   @PermitAll
-  public Usuario logado() {
+  public UsuarioDTO logado() {
     var username = ofNullable(SecurityContextHolder.getContext().getAuthentication())
         .map(Authentication::getPrincipal).map(User.class::cast)
         .map(User::getUsername)
@@ -63,8 +64,7 @@ public class UsuarioService {
       return null;
     }
 
-    usuario.setSenha(null);
-    return usuario;
+    return UsuarioDTO.toDTO(usuario);
   }
 
   @RolesAllowed("ROLE_ADMIN")
@@ -77,7 +77,7 @@ public class UsuarioService {
 
     var logado = logado();
 
-    if (logado.getUsername().equals(usuario.getUsername())) {
+    if (logado.username().equals(usuario.getUsername())) {
       return;
     }
 
@@ -100,7 +100,7 @@ public class UsuarioService {
 
     var logado = logado();
 
-    if (logado.getUsername().equals(usuario.getUsername())) {
+    if (logado.username().equals(usuario.getUsername())) {
       return;
     }
 
@@ -154,15 +154,12 @@ public class UsuarioService {
   @RolesAllowed("ROLE_USER")
   public void alterarSenha(@NonNull String senhaAtual, @NonNull String senhaNova) {
     var usuario = logado();
-    var senha = usuario.getSenha();
+    var usuarioEntidade = usuarioRepositorio.findByUsername(usuario.username());
 
-    /*if (!passwordEncoder.matches(senhaAtual, senha)) {
-      System.out.println("Senhas não batem");
-      return;
-    }*/
+    if (usuarioEntidade == null) return;
 
     var senhaNovaCodificada = passwordEncoder.encode(senhaNova);
-    usuario.setSenha(senhaNovaCodificada);
-    usuarioRepositorio.save(usuario);
+    usuarioEntidade.setSenha(senhaNovaCodificada);
+    usuarioRepositorio.save(usuarioEntidade);
   }
 }

@@ -11,7 +11,7 @@ public interface Assistente {
         
         Quando o assunto for algo fora do teu domínio ou se o usuário pedir por um humano, deves usar a ferramenta para designar um técnico ao pedido.
         
-        Nunca exponha os tecnicos, sempre consulte a lista quando for atribuir um pedido.
+        Nunca exponha os tecnicos, sempre consulte a lista quando for atribuir um pedido, e escolha apenas os que estiverem disponiveis.
         
         Sempre tente oferecer uma ajuda antes de atribuir.
         
