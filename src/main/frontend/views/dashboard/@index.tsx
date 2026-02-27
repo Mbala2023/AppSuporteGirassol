@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { Navbar } from "@/components/navbar";
+import {Button} from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -10,6 +11,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import {GenerateOrderReport} from "@/components/generate-order-reports"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Package,
@@ -85,6 +87,7 @@ export default function DashboardPage() {
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [pedidos, setPedidos] = useState<Pedido[]>([]);
   const [avaliacoes, setAvaliacoes] = useState<Avaliacao[]>([]);
+  const [generateOrderReportOpen, setGenerateOrderReportOpen] = useState<boolean>(false);
   const {
     state: { user },
   } = useAuth();
@@ -609,10 +612,15 @@ export default function DashboardPage() {
           <TabsContent value="orders" className="space-y-4">
             <Card>
               <CardHeader>
+               <div className="flex items-center justify-between">
+                <div>
                 <CardTitle>Todos os Pedidos</CardTitle>
                 <CardDescription>
                   Lista completa de pedidos no sistema
                 </CardDescription>
+                </div>
+                <Button onClick={() => setGenerateOrderReportOpen(true)}>Gerar relatório</Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
@@ -689,6 +697,7 @@ export default function DashboardPage() {
           </TabsContent>
         </Tabs>
       </main>
+      <GenerateOrderReport open={generateOrderReportOpen} setOpen={setGenerateOrderReportOpen} />
     </div>
   );
 }
